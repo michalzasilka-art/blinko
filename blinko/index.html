@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Blinko · fugio</title>
+<meta name="description" content="Blinko: answer, power up, drop the ball! A classroom quiz game for the interactive whiteboard.">
+<meta property="og:title" content="Blinko">
+<meta property="og:description" content="Answer, power up, drop the ball! A fugio classroom game.">
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="blinko.css?v=1">
+</head>
+<body>
+<div id="stage">
+  <canvas id="scene"></canvas>
+  <canvas id="confetti"></canvas>
+
+  <!-- 1. setup -->
+  <section class="screen" id="scr-setup">
+    <header class="hero">
+      <div class="logo" aria-label="Blinko"><span>B</span><span>L</span><span>I</span><span>N</span><span>K</span><span class="o"></span></div>
+      <p class="tagline">Answer · Power up · Drop the ball!</p>
+    </header>
+    <div class="setup-cols">
+      <div class="glass panel-setup" id="setupMain"></div>
+      <div class="glass panel-powers">
+        <div class="ph"><h2>Power-ups</h2><p>Tap a card to take it out of the game</p></div>
+        <div class="pgrid" id="powerGrid"></div>
+      </div>
+    </div>
+    <div class="dock"><button class="btn gold xl" data-act="toTeams">Next: the teams <i>→</i></button></div>
+  </section>
+
+  <!-- 2. teams -->
+  <section class="screen" id="scr-teams">
+    <header class="hero small"><h1 class="title">Name your teams</h1><p class="tagline">Tap a picture to change it · tap a name to type a new one</p></header>
+    <div class="team-grid" id="teamGrid"></div>
+    <div class="dock">
+      <button class="btn ghost lg" data-act="toSetup"><i>←</i> Back</button>
+      <button class="btn ghost lg" data-act="howto">How to play</button>
+      <button class="btn gold xl" data-act="start">Start game <i>▶</i></button>
+    </div>
+  </section>
+
+  <!-- 3. game -->
+  <section class="screen" id="scr-game">
+    <div class="topbar">
+      <div class="mini-logo">BLINK<span class="o"></span></div>
+      <div class="chip" id="roundChip">Round 1 of 4</div>
+      <div class="chip mode" id="modeChip"></div>
+      <div class="tb-right">
+        <button class="icon-btn" data-act="home" aria-label="Back to setup"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></svg></button>
+        <button class="icon-btn" data-act="pause" aria-label="Pause"><svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg></button>
+        <button class="icon-btn" data-act="mute" aria-label="Sound" id="muteBtn"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button class="icon-btn" data-act="fullscreen" aria-label="Full screen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>
+    <div class="glass side left" id="panel"></div>
+    <div class="board-wrap"><canvas id="board"></canvas></div>
+    <div class="glass side right">
+      <h3 class="sh">Scores</h3>
+      <div id="scores"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </section>
+
+  <!-- 4. final -->
+  <section class="screen" id="scr-final">
+    <header class="hero small"><h1 class="title" id="winTitle">Fox Squad wins!</h1></header>
+    <div class="final-cols">
+      <div class="glass fin-scores"><h3 class="sh">Final scores</h3><div id="finScores"></div></div>
+      <div class="podium" id="podium"></div>
+      <div class="glass fin-learn"><h3 class="sh">Learning summary</h3><div id="learn"></div></div>
+    </div>
+    <div class="dock">
+      <button class="btn ghost lg" data-act="newSetup">New setup</button>
+      <button class="btn ghost lg" data-act="addRounds">+ 2 rounds</button>
+      <button class="btn gold xl" data-act="again">Play again <i>↻</i></button>
+    </div>
+  </section>
+
+  <!-- overlays -->
+  <div class="overlay" id="howto"></div>
+  <div class="overlay" id="pauseOv"><div class="glass modal"><h2 class="title">Paused</h2><button class="btn gold xl" data-act="resume">Resume <i>▶</i></button><button class="btn ghost lg" data-act="home">Back to setup</button></div></div>
+  <div class="overlay" id="homeOv"><div class="glass modal"><h2 class="title sm">Leave this game?</h2><p class="mp">The scores of this game will be lost.</p><div class="row"><button class="btn ghost lg" data-act="stay">Keep playing</button><button class="btn bad lg" data-act="leave">Leave</button></div></div></div>
+  <div class="toast" id="toast"></div>
+</div>
+<script type="module" src="game.js?v=1"></script>
+</body>
+</html>
