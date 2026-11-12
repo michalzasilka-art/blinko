@@ -1,91 +1,10 @@
-// Blinko — everything that is drawn: the twilight fair behind the game, the peg board, the balls and the power-up pictures.
-// All art is code (canvas). Board units are 600 × 820 (see engine.js).
+// Blinko — everything drawn on the board: the peg board, the balls and the power-up pictures.
+// The pictures are painted (art/*.webp); every one has a code-drawn stand-in. Board units are 600 × 820 (see engine.js).
 import { BW, BH, SLOTS, slotX } from './data.js';
+import { META } from './art/meta.js?v=2';
 
 const TAU = Math.PI * 2;
-const rnd = (s) => () => ((s = (s * 16807) % 2147483647) / 2147483647);
 
-/* ---------------------------------------------------------------- the fair behind everything */
-export function paintScene(cv, W = 1920, H = 1080) {
-  const c = cv.getContext('2d'); cv.width = W; cv.height = H;
-  const r = rnd(7);
-  // sky
-  const sky = c.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, '#120a3c'); sky.addColorStop(0.42, '#3a1d78'); sky.addColorStop(0.66, '#8a3f9e'); sky.addColorStop(0.8, '#ff8a6b'); sky.addColorStop(1, '#ffc27a');
-  c.fillStyle = sky; c.fillRect(0, 0, W, H);
-  // big soft glow on the horizon
-  let g = c.createRadialGradient(W / 2, H * 0.82, 10, W / 2, H * 0.82, W * 0.6);
-  g.addColorStop(0, 'rgba(255,214,140,.55)'); g.addColorStop(1, 'rgba(255,214,140,0)');
-  c.fillStyle = g; c.fillRect(0, 0, W, H);
-  // stars
-  for (let i = 0; i < 260; i++) {
-    const x = r() * W, y = r() * H * 0.55, s = r() * 1.8 + 0.3;
-    c.globalAlpha = 0.25 + r() * 0.7 * (1 - y / (H * 0.6)); c.fillStyle = '#fff';
-    c.beginPath(); c.arc(x, y, s, 0, TAU); c.fill();
-  }
-  c.globalAlpha = 1;
-  // moon
-  g = c.createRadialGradient(1540, 170, 10, 1540, 170, 160); g.addColorStop(0, 'rgba(255,240,210,.5)'); g.addColorStop(1, 'rgba(255,240,210,0)');
-  c.fillStyle = g; c.fillRect(1300, 0, 500, 400);
-  c.fillStyle = '#fff4dc'; c.beginPath(); c.arc(1540, 170, 46, 0, TAU); c.fill();
-  c.fillStyle = 'rgba(210,190,230,.35)'; [[1525, 160, 9], [1555, 185, 6], [1548, 150, 5]].forEach(([x, y, s]) => { c.beginPath(); c.arc(x, y, s, 0, TAU); c.fill(); });
-  // far hills
-  const hill = (y0, amp, col, seed) => {
-    const rr = rnd(seed); c.fillStyle = col; c.beginPath(); c.moveTo(0, H);
-    const ph = rr() * 6;
-    for (let x = 0; x <= W; x += 20) c.lineTo(x, y0 + Math.sin(x / 310 + ph) * amp + Math.sin(x / 120 + ph * 2) * amp * 0.25);
-    c.lineTo(W, H); c.fill();
-  };
-  hill(H * 0.74, 30, '#5a2b74', 3);
-  // ferris wheel (left)
-  ferris(c, 250, 560, 240);
-  // tents (right)
-  tent(c, 1580, 820, 170, '#ff5e8a', '#ffe9d6'); tent(c, 1770, 850, 130, '#4f8bff', '#e6f0ff'); tent(c, 1430, 870, 110, '#ffc93d', '#fff6dc');
-  hill(H * 0.84, 22, '#3b1a58', 11);
-  hill(H * 0.92, 16, '#26103f', 19);
-  // string lights across the top corners
-  bulbs(c, [[0, 40], [260, 120], [560, 60]], 22, r);
-  bulbs(c, [[1360, 60], [1660, 130], [1920, 40]], 22, r);
-  // vignette
-  g = c.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 1.05);
-  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(8,4,24,.55)');
-  c.fillStyle = g; c.fillRect(0, 0, W, H);
-}
-function ferris(c, x, y, R) {
-  c.save(); c.translate(x, y);
-  c.strokeStyle = 'rgba(40,16,70,.9)'; c.lineWidth = 10;
-  c.beginPath(); c.moveTo(-R * 0.55, R * 1.25); c.lineTo(0, 0); c.lineTo(R * 0.55, R * 1.25); c.stroke();
-  c.lineWidth = 6; c.beginPath(); c.arc(0, 0, R, 0, TAU); c.stroke();
-  c.lineWidth = 3; c.beginPath(); c.arc(0, 0, R * 0.62, 0, TAU); c.stroke();
-  for (let i = 0; i < 16; i++) { const a = (i / 16) * TAU; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * R, Math.sin(a) * R); c.stroke(); }
-  for (let i = 0; i < 48; i++) { const a = (i / 48) * TAU; glowDot(c, Math.cos(a) * R, Math.sin(a) * R, 4, i % 3 ? '#ffd27a' : '#ff8fd0'); }
-  const cab = ['#ff5e8a', '#ffc93d', '#33d1a6', '#4f8bff', '#b28bff', '#ff973b', '#5fcf5a', '#ff5e8a'];
-  for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU + 0.2, cx = Math.cos(a) * R, cy = Math.sin(a) * R; c.fillStyle = cab[i]; c.globalAlpha = 0.85; rr(c, cx - 17, cy + 4, 34, 26, 8); c.fill(); c.globalAlpha = 1; }
-  glowDot(c, 0, 0, 12, '#fff2c0');
-  c.restore();
-}
-function tent(c, x, y, w, col, col2) {
-  c.save(); c.translate(x, y);
-  const h = w * 0.9, n = 6;
-  for (let i = 0; i < n; i++) { c.fillStyle = i % 2 ? col2 : col; c.beginPath(); c.moveTo(0, -h); c.lineTo(-w / 2 + (i / n) * w, 0); c.lineTo(-w / 2 + ((i + 1) / n) * w, 0); c.closePath(); c.fill(); }
-  c.fillStyle = 'rgba(30,10,50,.35)'; c.fillRect(-w / 2, 0, w, h * 0.45);
-  for (let i = 0; i < n; i++) { c.fillStyle = i % 2 ? col2 : col; c.beginPath(); c.arc(-w / 2 + ((i + 0.5) / n) * w, 0, w / n / 2, 0, Math.PI); c.fill(); }
-  c.fillStyle = 'rgba(255,220,150,.75)'; rr(c, -w * 0.12, h * 0.08, w * 0.24, h * 0.37, 6); c.fill();
-  c.fillStyle = col; c.beginPath(); c.moveTo(0, -h); c.lineTo(0, -h - 26); c.lineTo(22, -h - 18); c.lineTo(0, -h - 12); c.fill();
-  c.restore();
-}
-function bulbs(c, pts, n, r) {
-  c.strokeStyle = 'rgba(30,12,40,.8)'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(...pts[0]); c.quadraticCurveTo(...pts[1], ...pts[2]); c.stroke();
-  for (let i = 0; i <= n; i++) {
-    const t = i / n, x = (1 - t) ** 2 * pts[0][0] + 2 * (1 - t) * t * pts[1][0] + t * t * pts[2][0], y = (1 - t) ** 2 * pts[0][1] + 2 * (1 - t) * t * pts[1][1] + t * t * pts[2][1];
-    glowDot(c, x, y + 7, 6, ['#ffd27a', '#ff8fd0', '#8fe3ff', '#b4ff9a'][i % 4]);
-  }
-}
-function glowDot(c, x, y, s, col) {
-  const g = c.createRadialGradient(x, y, 0, x, y, s * 4); g.addColorStop(0, col); g.addColorStop(0.25, col + 'aa'); g.addColorStop(1, col + '00');
-  c.fillStyle = g; c.beginPath(); c.arc(x, y, s * 4, 0, TAU); c.fill();
-  c.fillStyle = '#fffbe8'; c.beginPath(); c.arc(x, y, s * 0.55, 0, TAU); c.fill();
-}
 export function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 
 /* ---------------------------------------------------------------- pictures of power-ups and balls */
@@ -104,7 +23,34 @@ function smile(c, R, y = 0.22, w = 0.32, open = false) {
   c.beginPath(); c.arc(0, R * (y - w * 0.6), R * w, 0.2 * Math.PI, 0.8 * Math.PI);
   if (open) { c.closePath(); c.fillStyle = '#b3123e'; c.fill(); } c.stroke();
 }
+/* painted pictures (ChatGPT, prepared by Foxino/Blinko/Art/build_art.py → art/*.webp + art/meta.js).
+   The code drawings below stay as the fallback while a picture is loading (or if one is missing). */
+const SPR = new Map();
+export const artURL = (name) => `art/${name}.webp?v=2`;
+const SPRITE_OF = { yin: 'pu-yinyang', yang: 'pu-yinyang', minizombie: 'pu-zombie', coin: 'coin', chick: 'chick', kernel: 'kernel' };
+const POWER_IDS = ['dynamite', 'yoyo', 'bouncy', 'egg', 'turtle', 'cow', 'balloon', 'puffer', 'oinky', 'shark', 'yinyang', 'popcorn', 'bowling', 'zombie', 'shield', 'boost'];
+const PEG_SPR = { normal: 'peg-blue', mint: 'peg-mint', gold: 'peg-gold', vanish: 'peg-bubble', spike: 'peg-spike' };
+export function artList() {
+  const names = Object.keys(META.sprites).filter((n) => !['logo', 'podium', 'crown', 'btn-round'].includes(n)); if (META.frame) names.push('board-frame');
+  return names;
+}
+export function loadArt(onOne = () => {}) {
+  const one = (n) => new Promise((res) => { const im = new Image(); im.onload = () => { SPR.set(n, im); onOne(); res(); }; im.onerror = () => { onOne(); res(); }; im.src = artURL(n); });
+  return Promise.all(artList().map(one));
+}
+export const hasArt = (name) => SPR.has(name);
+// draws a picture centred at 0,0 so that its longest side is `size`
+function sprite(c, name, size) {
+  const im = SPR.get(name); if (!im) return false;
+  const k = size / Math.max(im.naturalWidth, im.naturalHeight); c.drawImage(im, -im.naturalWidth * k / 2, -im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); return true;
+}
 export function drawThing(c, k, R, t = 0, extra = {}) {
+  const name = SPRITE_OF[k] || (POWER_IDS.includes(k) ? 'pu-' + k : null);
+  if (name && SPR.has(name)) {
+    c.save();
+    if (k === 'yin' || k === 'yang') c.rotate(t * 2 + (k === 'yang' ? Math.PI : 0));
+    sprite(c, name, R * (k === 'coin' ? 2 : 2.3)); c.restore(); return;
+  }
   c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
   switch (k) {
     case 'dynamite': {
@@ -200,11 +146,17 @@ export function drawThing(c, k, R, t = 0, extra = {}) {
 }
 function kernel(c, x, y, s) { c.fillStyle = '#fff6d8'; [[0, 0, 1], [-0.6, 0.2, 0.7], [0.6, 0.15, 0.75], [0, -0.55, 0.7]].forEach(([a, b, k]) => { c.beginPath(); c.arc(x + a * s, y + b * s, s * k * 0.75, 0, TAU); c.fill(); }); c.strokeStyle = 'rgba(160,110,40,.6)'; c.lineWidth = s * 0.12; c.beginPath(); c.arc(x, y, s * 0.75, 0, TAU); c.stroke(); c.fillStyle = '#ffcf4a'; c.beginPath(); c.arc(x + s * 0.15, y + s * 0.3, s * 0.25, 0, TAU); c.fill(); }
 function hex(c, x, y, r) { c.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + Math.PI / 6; c[i ? 'lineTo' : 'moveTo'](x + Math.cos(a) * r, y + Math.sin(a) * r); } c.closePath(); }
+// a gold star (the painted one when it is there)
+export function goldStar(c, x, y, R) {
+  if (SPR.has('star')) { c.save(); c.translate(x, y); sprite(c, 'star', R * 2.5); c.restore(); return; }
+  c.fillStyle = '#ffe14d'; star(c, x, y, R, R * 0.45); c.fill(); c.lineWidth = Math.max(1.2, R * 0.16); c.strokeStyle = '#7a4a00'; c.stroke();
+}
 export function star(c, x, y, R, r, n = 5) { c.beginPath(); for (let i = 0; i < n * 2; i++) { const a = (i / (n * 2)) * TAU - Math.PI / 2, d = i % 2 ? r : R; c[i ? 'lineTo' : 'moveTo'](x + Math.cos(a) * d, y + Math.sin(a) * d); } c.closePath(); }
 
 // a power-up picture as an image URL (for the cards and buttons)
 const iconCache = new Map();
 export function powerIcon(id, size = 160) {
+  if (SPR.has('pu-' + id)) return artURL('pu-' + id);
   const key = id + size; if (iconCache.has(key)) return iconCache.get(key);
   const cv = document.createElement('canvas'); cv.width = cv.height = size; const c = cv.getContext('2d');
   c.translate(size / 2, size / 2 + (['dynamite', 'yoyo', 'balloon', 'shark'].includes(id) ? size * 0.08 : 0));
@@ -212,6 +164,7 @@ export function powerIcon(id, size = 160) {
   const url = cv.toDataURL(); iconCache.set(key, url); return url;
 }
 export function pegIcon(kind, size = 64) {
+  if (SPR.has(PEG_SPR[kind])) return artURL(PEG_SPR[kind]);
   const key = 'peg' + kind + size; if (iconCache.has(key)) return iconCache.get(key);
   const cv = document.createElement('canvas'); cv.width = cv.height = size; const c = cv.getContext('2d');
   c.translate(size / 2, size / 2); drawPeg(c, { kind, r: kind === 'spike' ? 9 : 8, flash: 0, icon: true }, size / 32, 0);
@@ -227,7 +180,11 @@ export function drawPeg(c, p, k, time) {
     const gr = R * (2.2 + f * 2.2), g = c.createRadialGradient(0, 0, R * 0.5, 0, 0, gr);
     g.addColorStop(0, glow + (f > 0.02 ? 'cc' : '55')); g.addColorStop(1, glow + '00'); c.fillStyle = g; c.beginPath(); c.arc(0, 0, gr, 0, TAU); c.fill();
   }
-  if (p.kind === 'spike') {
+  if (SPR.has(PEG_SPR[p.kind])) {
+    if (p.kind === 'spike') c.rotate(Math.sin(time * 2 + (p.x || 0)) * 0.25);
+    const pop = 1 + f * 0.25;
+    sprite(c, PEG_SPR[p.kind], R * (p.kind === 'spike' ? 3.1 : p.kind === 'vanish' ? 2.5 : 2.3) * pop);
+  } else if (p.kind === 'spike') {
     c.rotate(time * 1.2); star(c, 0, 0, R * 1.35, R * 0.62, 8); c.fillStyle = shade(c, R, a, b); c.fill(); c.lineWidth = k * 1.4; c.strokeStyle = '#5a0716'; c.stroke();
     c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, R * 0.25, 0, TAU); c.fill();
   } else if (p.kind === 'vanish') {
@@ -253,7 +210,7 @@ export class BoardView {
   setSize(w, h, ratio) {
     const dpr = Math.min(3, ratio || window.devicePixelRatio || 1);
     this.W = w; this.H = h; this.cv.width = Math.round(w * dpr); this.cv.height = Math.round(h * dpr); this.dpr = dpr;
-    this.F = 30; this.k = (h - this.F * 2) / BH; this.ox = (w - BW * this.k) / 2; this.oy = this.F;
+    this.F = META.frame ? 42 : 30; this.k = (h - this.F * 2) / BH; this.ox = (w - BW * this.k) / 2; this.oy = this.F;
   }
   portrait(url) {
     if (!url) return null;
@@ -274,13 +231,15 @@ export class BoardView {
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.clearRect(0, 0, this.W, this.H);
     const shake = s.drop && !s.reduced ? s.drop.shake : 0;
     if (shake > 0) c.translate((Math.random() - 0.5) * shake * 10, (Math.random() - 0.5) * shake * 10);
-    this.frame(c);
+    const painted = META.frame && SPR.get('board-frame');
+    if (painted) { c.save(); c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 30; c.shadowOffsetY = 12; c.fillStyle = '#1d1557'; rr(c, this.ox - 8, this.oy - 8, BW * k + 16, BH * k + 16, 30); c.fill(); c.restore(); }
+    else this.frame(c);
     c.save(); c.translate(this.ox, this.oy); c.scale(k, k);
     // inner board
     rr(c, 0, 0, BW, BH, 22); c.save(); c.clip();
-    const g = c.createLinearGradient(0, 0, 0, BH); g.addColorStop(0, '#1d1557'); g.addColorStop(0.6, '#2a1a68'); g.addColorStop(1, '#3a1d6e'); c.fillStyle = g; c.fillRect(0, 0, BW, BH);
+    const g = c.createLinearGradient(0, 0, 0, BH); g.addColorStop(0, '#241260'); g.addColorStop(0.55, '#3a1a86'); g.addColorStop(1, '#4b1f8f'); c.fillStyle = g; c.fillRect(0, 0, BW, BH);
     // soft light spots
-    const sp = c.createRadialGradient(BW / 2, 140, 10, BW / 2, 140, 420); sp.addColorStop(0, 'rgba(140,120,255,.28)'); sp.addColorStop(1, 'rgba(140,120,255,0)'); c.fillStyle = sp; c.fillRect(0, 0, BW, BH);
+    const sp = c.createRadialGradient(BW / 2, 140, 10, BW / 2, 140, 420); sp.addColorStop(0, 'rgba(190,130,255,.30)'); sp.addColorStop(1, 'rgba(190,130,255,0)'); c.fillStyle = sp; c.fillRect(0, 0, BW, BH);
     c.fillStyle = 'rgba(255,255,255,.035)'; for (let y = 20; y < 730; y += 30) for (let x = (y / 30) % 2 ? 15 : 30; x < BW; x += 30) { c.beginPath(); c.arc(x, y, 1.6, 0, TAU); c.fill(); }
     const board = s.board, d = s.drop;
     if (board) {
@@ -294,8 +253,32 @@ export class BoardView {
     }
     c.restore(); // clip
     // inner rim
-    rr(c, 0, 0, BW, BH, 22); c.lineWidth = 4; c.strokeStyle = 'rgba(255,255,255,.18)'; c.stroke();
+    if (!painted) { rr(c, 0, 0, BW, BH, 22); c.lineWidth = 4; c.strokeStyle = 'rgba(255,255,255,.18)'; c.stroke(); }
     c.restore();
+    if (painted) this.framePainted(c, painted);
+  }
+  // the painted frame, laid around the board in 8 pieces (corners keep their shape, the straight parts stretch), with the chasing bulbs on top
+  framePainted(c, im) {
+    const f = META.frame, [hx, hy, hw, hh] = f.hole, L = hx, T = hy, R = f.w - hx - hw, B = f.h - hy - hh, cs = f.corner;
+    const t = this.F - 6, s = t / ((L + R + T + B) / 4), bw = BW * this.k, bh = BH * this.k;
+    const x0 = this.ox - L * s, y0 = this.oy - T * s, x1 = this.ox + bw + R * s, y1 = this.oy + bh + B * s;
+    const sxs = [0, L + cs, f.w - R - cs, f.w], sys = [0, T + cs, f.h - B - cs, f.h];
+    const dxs = [x0, x0 + (L + cs) * s, x1 - (R + cs) * s, x1], dys = [y0, y0 + (T + cs) * s, y1 - (B + cs) * s, y1];
+    for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) {
+      if (i === 1 && j === 1) continue;
+      c.drawImage(im, sxs[i], sys[j], sxs[i + 1] - sxs[i], sys[j + 1] - sys[j], dxs[i] - 0.5, dys[j] - 0.5, dxs[i + 1] - dxs[i] + 1, dys[j + 1] - dys[j] + 1);
+    }
+    // bulbs along the middle of the frame
+    const bx = x0 + L * s / 2, by = y0 + T * s / 2, w = x1 - R * s / 2 - bx, h = y1 - B * s / 2 - by;
+    const rad = Math.max(8, (f.outer || cs + t) * s - t / 2), per = 2 * (w + h - 4 * rad) + TAU * rad, n = Math.round(per / 34);
+    for (let i = 0; i < n; i++) {
+      const [px, py] = rperim(bx, by, w, h, rad, (i / n) * per);
+      const on = ((i + Math.floor(this.marq)) % 3) === 0;
+      if (on) { const gg = c.createRadialGradient(px, py, 0, px, py, 15); gg.addColorStop(0, 'rgba(255,236,150,.95)'); gg.addColorStop(1, 'rgba(255,236,150,0)'); c.fillStyle = gg; c.beginPath(); c.arc(px, py, 15, 0, TAU); c.fill(); }
+      c.fillStyle = on ? '#fffbe6' : '#f0b24a'; c.beginPath(); c.arc(px, py, 5.2, 0, TAU); c.fill();
+      c.lineWidth = 1.4; c.strokeStyle = 'rgba(90,30,10,.65)'; c.stroke();
+      if (!on) { c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.arc(px - 1.5, py - 1.7, 1.5, 0, TAU); c.fill(); }
+    }
   }
   frame(c) {
     const x = this.ox - 22, y = 8, w = BW * this.k + 44, h = this.H - 16;
@@ -344,15 +327,18 @@ export class BoardView {
       const p = board.pockets[i], x = i * w, col = POCKET_COL[Math.round(rank[i] * (POCKET_COL.length - 1) / Math.max(1, n - 1))];
       const fx = d ? d.effects.filter((e) => e.kind === 'pocket' && e.p === i).reduce((m, e) => Math.max(m, 1 - e.t / 0.7), 0) : 0;
       c.save();
-      const g = c.createLinearGradient(0, 736, 0, BH); g.addColorStop(0, col); g.addColorStop(1, shadeHex(col, -0.45));
+      const g = c.createLinearGradient(0, 736, 0, BH); g.addColorStop(0, shadeHex(col, -0.45)); g.addColorStop(0.5, col); g.addColorStop(1, shadeHex(col, 0.12));
       c.fillStyle = g; c.fillRect(x, 736, w, BH - 736);
-      c.fillStyle = 'rgba(255,255,255,.14)'; c.fillRect(x, 736, w, 10);
+      const pulse = 0.5 + 0.5 * Math.sin(this.time * 2.2 + i * 0.9);
+      const gl = c.createRadialGradient(x + w / 2, BH + 10, 2, x + w / 2, BH + 10, w * 0.8); gl.addColorStop(0, `rgba(255,255,255,${0.3 + pulse * 0.18})`); gl.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = gl; c.fillRect(x, 736, w, BH - 736);
+      c.fillStyle = 'rgba(10,2,40,.28)'; c.fillRect(x, 736, w, 9);
       if (fx > 0) { c.fillStyle = `rgba(255,255,255,${fx * 0.6})`; c.fillRect(x, 736, w, BH - 736); const lg = c.createLinearGradient(0, 400, 0, 736); lg.addColorStop(0, 'rgba(255,230,140,0)'); lg.addColorStop(1, `rgba(255,230,140,${fx * 0.5})`); c.fillStyle = lg; c.fillRect(x, 400, w, 336); }
       // value
       const big = n <= 6; c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.font = `${big ? 30 : n <= 7 ? 26 : 22}px "Lilita One", sans-serif`; c.lineWidth = 5; c.strokeStyle = 'rgba(20,6,50,.7)';
+      c.font = `${big ? 30 : n <= 7 ? 26 : 22}px "Lilita One", sans-serif`; c.lineWidth = 6; c.lineJoin = 'round'; c.strokeStyle = 'rgba(30,8,70,.9)';
       const ty = p.stars ? 796 : 782; c.strokeText(String(p.value), x + w / 2, ty); c.fillText(String(p.value), x + w / 2, ty);
-      if (p.stars) { for (let j = 0; j < p.stars; j++) { const sx = x + w / 2 + (j - (p.stars - 1) / 2) * 17; c.fillStyle = '#ffe14d'; star(c, sx, 762, 8.5, 3.8); c.fill(); c.lineWidth = 1.6; c.strokeStyle = '#7a4a00'; c.stroke(); } }
+      if (p.stars) { for (let j = 0; j < p.stars; j++) { const sx = x + w / 2 + (j - (p.stars - 1) / 2) * 17; goldStar(c, sx, 762, 8.5); } }
       // gate (a bar across the top of the pocket)
       const gate = d ? d.gates[i] : { open: false, openT: 0, hitT: -1 };
       const o = gate.open ? Math.min(1, gate.openT / 0.35) : 0, hit = gate.hitT >= 0 ? Math.max(0, 1 - gate.hitT / 0.3) : 0;
@@ -366,14 +352,17 @@ export class BoardView {
     }
     // dividers
     for (let i = 1; i < n; i++) {
-      const x = i * w; const g = c.createLinearGradient(x - 5, 0, x + 5, 0); g.addColorStop(0, '#b8a6ff'); g.addColorStop(0.5, '#fff'); g.addColorStop(1, '#8a76e0');
-      c.fillStyle = g; c.fillRect(x - 3.5, 730, 7, BH - 730); c.beginPath(); c.arc(x, 730, 6, 0, TAU); c.fill(); c.strokeStyle = 'rgba(40,10,80,.6)'; c.lineWidth = 1.5; c.stroke();
+      const x = i * w; const g = c.createLinearGradient(x - 5, 0, x + 5, 0); g.addColorStop(0, '#c9861a'); g.addColorStop(0.45, '#fff0b0'); g.addColorStop(1, '#b06a10');
+      c.fillStyle = g; c.fillRect(x - 4, 730, 8, BH - 730); c.strokeStyle = 'rgba(70,30,0,.55)'; c.lineWidth = 1.2; c.strokeRect(x - 4, 730, 8, BH - 730);
+      c.fillStyle = g; c.beginPath(); c.arc(x, 730, 6.5, 0, TAU); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.arc(x - 1.8, 728, 1.8, 0, TAU); c.fill();
     }
   }
   sides(c, d) {
     for (const b of d.sideBumpers) {
       const h = b.hitT >= 0 ? Math.max(0, 1 - b.hitT / 0.3) : 0, col = b.tone === 'purple' ? ['#6d3de8', '#c7a6ff'] : ['#ff7a1e', '#ffd0a0'];
       c.save(); c.translate(b.x, b.y); c.scale(1 + h * 0.25, 1 + h * 0.25);
+      if (sprite(c, 'bumper-' + b.tone, b.r * 2.35)) { if (h > 0) { c.globalAlpha = h; c.lineWidth = 3; c.strokeStyle = '#fff'; c.beginPath(); c.arc(0, 0, b.r * 1.25, 0, TAU); c.stroke(); } c.restore(); continue; }
       c.fillStyle = shade(c, b.r, col[0], col[1]); c.beginPath(); c.arc(0, 0, b.r, 0, TAU); c.fill();
       c.lineWidth = 3; c.strokeStyle = h > 0 ? '#fff' : 'rgba(255,255,255,.6)'; c.beginPath(); c.arc(0, 0, b.r * 0.62, 0, TAU); c.stroke();
       c.restore();
@@ -388,12 +377,13 @@ export class BoardView {
     const h = m.hitT >= 0 && m.hitT !== undefined ? 0 : 0, t = this.time;
     c.save(); c.translate(m.x, m.y);
     const g = c.createRadialGradient(0, 0, 4, 0, 0, m.r * 2.4); g.addColorStop(0, 'rgba(120,240,255,.5)'); g.addColorStop(1, 'rgba(120,240,255,0)'); c.fillStyle = g; c.beginPath(); c.arc(0, 0, m.r * 2.4, 0, TAU); c.fill();
+    if (SPR.has('bumper-orb')) { c.translate(0, Math.sin(t * 5) * 1.5); c.rotate(Math.sin(t * 2.4) * 0.12); sprite(c, 'bumper-orb', m.r * 3); c.restore(); return; }
     c.fillStyle = shade(c, m.r, '#1aa6d8', '#e6fbff'); c.beginPath(); c.arc(0, 0, m.r, 0, TAU); c.fill();
     c.rotate(t * 3); c.lineWidth = 3; c.strokeStyle = '#fff'; c.setLineDash([6, 6]); c.beginPath(); c.arc(0, 0, m.r * 0.65, 0, TAU); c.stroke();
     c.restore(); void h;
   }
   ball(c, b, team) {
-    const R = b.r * (b.r < 9 ? 1.35 : 1.1); // drawn a little bigger than the physics ball, so it reads from the back of the room
+    const R = b.r * (b.r < 9 ? 1.45 : 1.22); // drawn a little bigger than the physics ball, so it reads from the back of the room
     // squash on impact
     if (b.impact > 0.02) { c.rotate(b.impactAngle); c.scale(1 - b.impact * 0.22, 1 + b.impact * 0.12); c.rotate(-b.impactAngle); }
     if (b.kind === 'normal') {
@@ -456,7 +446,7 @@ export class BoardView {
       if (e.kind !== 'starfly' || e.t < 0) continue;
       const p = Math.min(1, e.t / 1.0), ease = 1 - (1 - p) ** 3;
       const x = e.x + (BW - 40 - e.x) * ease, y = e.y + (-30 - e.y) * ease - Math.sin(p * Math.PI) * 80;
-      c.save(); c.globalAlpha = 1 - Math.max(0, p - 0.8) * 5; c.fillStyle = '#ffe14d'; star(c, x, y, 16 * (1 - p * 0.3), 7); c.fill(); c.lineWidth = 2.5; c.strokeStyle = '#7a4a00'; c.stroke(); c.restore();
+      c.save(); c.globalAlpha = 1 - Math.max(0, p - 0.8) * 5; goldStar(c, x, y, 16 * (1 - p * 0.3)); c.restore();
     }
     // score floats
     for (const f of d.floats) {
@@ -471,6 +461,19 @@ export class BoardView {
   }
 }
 export const ballKind = (power) => (!power || power === 'shield' || power === 'boost' ? 'normal' : power === 'yinyang' ? 'yin' : power);
+// a point at distance d along a rounded rectangle (clockwise from the top-left corner's end)
+function rperim(x, y, w, h, r, d) {
+  const sw = w - 2 * r, sh = h - 2 * r, q = (Math.PI / 2) * r, P = 2 * (sw + sh) + 4 * q; d = ((d % P) + P) % P;
+  const arc = (cx, cy, a0, dd) => { const a = a0 + dd / r; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; };
+  if (d < sw) return [x + r + d, y]; d -= sw;
+  if (d < q) return arc(x + w - r, y + r, -Math.PI / 2, d); d -= q;
+  if (d < sh) return [x + w, y + r + d]; d -= sh;
+  if (d < q) return arc(x + w - r, y + h - r, 0, d); d -= q;
+  if (d < sw) return [x + w - r - d, y + h]; d -= sw;
+  if (d < q) return arc(x + r, y + h - r, Math.PI / 2, d); d -= q;
+  if (d < sh) return [x, y + h - r - d]; d -= sh;
+  return arc(x + r, y + r, Math.PI, d);
+}
 function perim(x, y, w, h, d) {
   const P = 2 * (w + h); d = ((d % P) + P) % P;
   if (d < w) return [x + d, y]; d -= w; if (d < h) return [x + w, y + d]; d -= h; if (d < w) return [x + w - d, y + h]; d -= w; return [x, y + h - d];

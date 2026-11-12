@@ -61,34 +61,34 @@ export const PEGS = [
   { kind: 'spike', label: 'Spike', pts: -40 },
 ];
 
-// question sets (from the prototype; image questions use a picture symbol)
+// question sets (from the prototype). `pic` is the painted picture (art/<pic>.webp); `image` is the symbol shown if the picture is missing
 export const SETS = [
   {
-    id: 'vocab-a2', title: 'Everyday words', subject: 'English', level: 'A2', icon: '🍎',
+    id: 'vocab-a2', title: 'Everyday words', subject: 'English', level: 'A2', icon: '🍎', pic: 'q-apple',
     questions: [
-      { id: 'v1', type: 'image', prompt: 'What is this in English?', image: '🍎', answer: 'apple', also: ['an apple'], explanation: 'An apple is a round fruit. We say “an apple” because it starts with a vowel sound.' },
+      { id: 'v1', type: 'image', prompt: 'What is this in English?', image: '🍎', pic: 'q-apple', answer: 'apple', also: ['an apple'], explanation: 'An apple is a round fruit. We say “an apple” because it starts with a vowel sound.' },
       { id: 'v2', type: 'text', prompt: 'Opposite of “expensive”?', answer: 'cheap', also: ['inexpensive'], explanation: 'Cheap (or inexpensive) means it does not cost much money.' },
       { id: 'v3', type: 'clue', prompt: 'Guess the word from the clues.', clues: ['It has pages.', 'You read it.', 'You can borrow it from a library.'], answer: 'book', explanation: 'A book has pages and you can read it or borrow it from a library.' },
-      { id: 'v4', type: 'image', prompt: 'Name this animal.', image: '🦒', answer: 'giraffe', explanation: 'A giraffe is the tallest animal on land. Spelling: g-i-r-a-f-f-e.' },
+      { id: 'v4', type: 'image', prompt: 'Name this animal.', image: '🦒', pic: 'q-giraffe', answer: 'giraffe', explanation: 'A giraffe is the tallest animal on land. Spelling: g-i-r-a-f-f-e.' },
       { id: 'v5', type: 'text', prompt: 'Past tense of “go”?', answer: 'went', explanation: '“Go” is irregular: go → went → gone.' },
       { id: 'v6', type: 'clue', prompt: 'Which job is it?', clues: ['Works in a hospital.', 'Helps sick people.', 'Is not a nurse.'], answer: 'doctor', also: ['physician'], explanation: 'A doctor examines and treats patients in a hospital or clinic.' },
-      { id: 'v7', type: 'image', prompt: 'What’s the weather like?', image: '🌧️', answer: 'rainy', also: ['it’s raining', 'rain'], explanation: 'We say “It’s rainy” or “It’s raining”.' },
+      { id: 'v7', type: 'image', prompt: 'What’s the weather like?', image: '🌧️', pic: 'q-rain', answer: 'rainy', also: ['it’s raining', 'rain'], explanation: 'We say “It’s rainy” or “It’s raining”.' },
       { id: 'v8', type: 'text', prompt: 'Plural of “child”?', answer: 'children', explanation: '“Child” has an irregular plural: children.' },
       { id: 'v9', type: 'text', prompt: 'Complete: I’m hungry, I want to ___ something.', answer: 'eat', explanation: 'When you’re hungry you eat. When you’re thirsty you drink.' },
-      { id: 'v10', type: 'image', prompt: 'What do you wear on your feet?', image: '👟', answer: 'shoes', also: ['trainers', 'sneakers'], explanation: 'Trainers (UK) / sneakers (US) are sports shoes.' },
+      { id: 'v10', type: 'image', prompt: 'What do you wear on your feet?', image: '👟', pic: 'q-shoes', answer: 'shoes', also: ['trainers', 'sneakers'], explanation: 'Trainers (UK) / sneakers (US) are sports shoes.' },
       { id: 'v11', type: 'clue', prompt: 'Which room?', clues: ['There is a fridge.', 'You cook here.'], answer: 'kitchen', explanation: 'The kitchen is where you cook and keep food.' },
       { id: 'v12', type: 'text', prompt: 'Synonym of “big”?', answer: 'large', also: ['huge', 'enormous'], explanation: 'Large is a common synonym; huge and enormous mean very big.' },
     ],
   },
   {
-    id: 'vocab-colors', title: 'Colours & Shapes', subject: 'English', level: 'A1', icon: '🔺',
+    id: 'vocab-colors', title: 'Colours & Shapes', subject: 'English', level: 'A1', icon: '🔺', pic: 'q-triangle',
     questions: [
-      { id: 'c1', type: 'image', prompt: 'What colour is it?', image: '🟣', answer: 'purple', explanation: 'Purple is Foxino’s favourite colour!' },
-      { id: 'c2', type: 'image', prompt: 'Name this shape.', image: '🔺', answer: 'triangle', explanation: 'A triangle has three sides.' },
+      { id: 'c1', type: 'image', prompt: 'What colour is it?', image: '🟣', pic: 'q-purple', answer: 'purple', explanation: 'Purple is Foxino’s favourite colour!' },
+      { id: 'c2', type: 'image', prompt: 'Name this shape.', image: '🔺', pic: 'q-triangle', answer: 'triangle', explanation: 'A triangle has three sides.' },
       { id: 'c3', type: 'text', prompt: 'Red + yellow = ?', answer: 'orange', explanation: 'Mixing red and yellow makes orange.' },
-      { id: 'c4', type: 'image', prompt: 'What colour is it?', image: '🟢', answer: 'green', explanation: 'Green — like grass and leaves.' },
+      { id: 'c4', type: 'image', prompt: 'What colour is it?', image: '🟢', pic: 'q-green', answer: 'green', explanation: 'Green — like grass and leaves.' },
       { id: 'c5', type: 'clue', prompt: 'Guess the shape.', clues: ['It is round.', 'It has no corners.'], answer: 'circle', explanation: 'A circle is perfectly round with no corners.' },
-      { id: 'c6', type: 'image', prompt: 'Name this shape.', image: '⭐', answer: 'star', explanation: 'A star usually has five points.' },
+      { id: 'c6', type: 'image', prompt: 'Name this shape.', image: '⭐', pic: 'star', answer: 'star', explanation: 'A star usually has five points.' },
     ],
   },
 ];

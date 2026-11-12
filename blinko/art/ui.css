@@ -1,0 +1,7 @@
+/* written by Foxino/Blinko/Art/build_art.py — the painted buttons (round ends fixed, middle stretches) */
+.btn.gold { background: none; box-shadow: none; border-style: solid; border-color: transparent; border-width: 0 calc(var(--bh) * 0.8333) 0 calc(var(--bh) * 0.8333); border-image: url(btn-gold.webp?v=2) 0 200 0 200 fill / 0 calc(var(--bh) * 0.8333) 0 calc(var(--bh) * 0.8333) stretch; padding: 0 6px; }
+.btn.good { background: none; box-shadow: none; border-style: solid; border-color: transparent; border-width: 0 calc(var(--bh) * 0.8333) 0 calc(var(--bh) * 1.0417); border-image: url(btn-green.webp?v=2) 0 200 0 250 fill / 0 calc(var(--bh) * 0.8333) 0 calc(var(--bh) * 1.0417) stretch; padding: 0 6px; }
+.btn.bad { background: none; box-shadow: none; border-style: solid; border-color: transparent; border-width: 0 calc(var(--bh) * 0.8333) 0 calc(var(--bh) * 1.0417); border-image: url(btn-red.webp?v=2) 0 200 0 250 fill / 0 calc(var(--bh) * 0.8333) 0 calc(var(--bh) * 1.0417) stretch; padding: 0 6px; }
+.btn.ghost, .btn.violet { background: none; box-shadow: none; border-style: solid; border-color: transparent; border-width: 0 calc(var(--bh) * 0.8333) 0 calc(var(--bh) * 0.8333); border-image: url(btn-purple.webp?v=2) 0 200 0 200 fill / 0 calc(var(--bh) * 0.8333) 0 calc(var(--bh) * 0.8333) stretch; padding: 0 6px; }
+.btn-pic.start { aspect-ratio: 840 / 300; background-image: url(btn-start.webp?v=2); }
+.btn-pic.drop { aspect-ratio: 765 / 300; background-image: url(btn-drop.webp?v=2); }

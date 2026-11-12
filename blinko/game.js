@@ -2,7 +2,8 @@
 // The turn flow is the prototype's ("Foxino Drop"): answer → (stars unlock power-up cards) → pick a release spot → drop → score.
 import { CONFIG, SETS, POWERS, PEGS, CREW, TEAM_COLORS, TEAM_NAMES, TEAM_CREW, crewURL, powerById } from './data.js';
 import { makeBoard, Drop, shuffle } from './engine.js';
-import { paintScene, BoardView, powerIcon, pegIcon, ballKind } from './art.js';
+import { BoardView, powerIcon, pegIcon, ballKind, loadArt, artList, artURL } from './art.js';
+import { META } from './art/meta.js?v=2';
 import { sfx, unlock, setMuted, isMuted } from './sound.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -29,8 +30,6 @@ function fit() {
   view && view.setSize(748, 990, scale * (devicePixelRatio || 1));
 }
 addEventListener('resize', fit);
-paintScene($('#scene'));
-
 /* ------------------------------------------------------------ screens */
 let screen = 'setup';
 function show(id) {
@@ -47,7 +46,7 @@ function seg(name, opts, val, cls = '') {
 function tog(name, label) { return `<button class="tog ${settings[name] ? 'on' : ''}" data-tog="${name}"><span>${label}</span><i class="sw"></i></button>`; }
 function renderSetup() {
   $('#setupMain').innerHTML = `
-    <div class="field wide"><label>Question set</label><div class="sets">${SETS.map((s) => `<button class="set ${s.id === settings.setId ? 'on' : ''}" data-set="${s.id}"><span class="em">${s.icon}</span><span><b>${esc(s.title)}</b><small>${s.subject} · ${s.level} · ${s.questions.length} questions</small></span></button>`).join('')}</div></div>
+    <div class="field wide"><label>Question set</label><div class="sets">${SETS.map((s) => `<button class="set ${s.id === settings.setId ? 'on' : ''}" data-set="${s.id}"><span class="em">${qPic(s, 'qp-set')}</span><span><b>${esc(s.title)}</b><small>${s.subject} · ${s.level} · ${s.questions.length} questions</small></span></button>`).join('')}</div></div>
     <div class="field"><label>Teams</label>${seg('teamCount', [2, 3, 4, 5, 6, 7, 8].map((n) => [n, n]), settings.teamCount)}</div>
     <div class="field"><label>Rounds</label>${seg('rounds', [1, 2, 3, 4, 5, 6, 8].map((n) => [n, n]), settings.rounds)}</div>
     <div class="field"><label>Time to answer</label>${seg('timeLimit', [[0, 'Off'], [20, '20 s'], [30, '30 s'], [60, '60 s']], settings.timeLimit)}</div>
@@ -213,14 +212,16 @@ function render() {
   $('#modeChip').textContent = g.mode === 'class' ? (g.classDrop ? `Every team drops · ${g.turn + 1} of ${g.teams.length}` : 'Everyone answers') : 'Team turns';
   $('#scr-game').className = 'screen on n' + g.teams.length;
   renderScores();
-  const key = [g.phase, g.turn, g.round, g.qPtr, g.revealed, g.clueStep, g.power, g.slot >= 0, JSON.stringify(g.marks || {}), g.offer.join()].join('|');
+  const key = [g.phase, g.turn, g.round, g.qPtr, g.revealed, g.clueStep, g.power, g.slot, JSON.stringify(g.marks || {}), g.offer.join()].join('|');
   if (key !== panelKey) { panelKey = key; $('#panel').innerHTML = panelHTML(); }
 }
+// a question's picture: the painted one when we have it, else its symbol
+const qPic = (o, cls = 'qp') => (o.pic && META.sprites[o.pic] ? `<img class="${cls}" src="${artURL(o.pic)}" alt="">` : o.image || o.icon || '');
 const turnHead = (t, label) => `<div class="turn" style="--c:${t.color}"><span class="pic" style="background-image:url(${teamImg(t)})"></span><span><small>${label}</small><b>${esc(t.name)}</b></span></div>`;
 function questionCard(q, tag, compact = false) {
-  if (compact) return `<div class="qcard compact"><div class="tag">${tag}</div><div class="prompt">${esc(q.prompt)}${q.type === 'image' ? ' ' + q.image : ''}</div><div class="answer"><small>Answer</small><b>${esc(q.answer)}</b>${q.also && q.also.length ? `<span>Also OK: ${q.also.map(esc).join(', ')}</span>` : ''}</div></div>`;
+  if (compact) return `<div class="qcard compact"><div class="tag">${tag}</div><div class="prompt">${esc(q.prompt)}${q.type === 'image' ? ' ' + qPic(q, 'qp-s') : ''}</div><div class="answer"><small>Answer</small><b>${esc(q.answer)}</b>${q.also && q.also.length ? `<span>Also OK: ${q.also.map(esc).join(', ')}</span>` : ''}</div></div>`;
   let body = '';
-  if (q.type === 'image') body = `<div class="img">${q.image}</div>`;
+  if (q.type === 'image') body = `<div class="img">${qPic(q)}</div>`;
   else if (q.type === 'clue') body = `<ul class="clues">${q.clues.map((c, i) => `<li class="${i <= g.clueStep || g.revealed ? '' : 'hid'}">${esc(c)}</li>`).join('')}</ul>`;
   const ans = g.revealed ? `<div class="answer"><small>Answer</small><b>${esc(q.answer)}</b>${q.also && q.also.length ? `<span>Also OK: ${q.also.map(esc).join(', ')}</span>` : ''}</div>` : '';
   const tl = settings.timeLimit && !g.revealed ? `<div class="timer" id="timer" style="--p:1"><span>${settings.timeLimit}</span></div>` : '';
@@ -239,10 +240,10 @@ function panelHTML() {
       }
       const stars = t.stars ? `<div class="badge" style="margin-bottom:14px">${'★'.repeat(t.stars)} ${t.stars} star${t.stars > 1 ? 's' : ''} — a right answer unlocks power-ups!</div>` : '';
       if (!g.revealed) return turnHead(t, 'Your turn') + stars + questionCard(q, `Round ${g.round} · question`) + `<div class="actions">${clueBtn(q)}<button class="btn gold xl block" data-act="reveal">Show answer</button></div>`;
-      return turnHead(t, 'Was it right?') + questionCard(q, `Round ${g.round} · question`) + `<div class="actions two"><button class="btn bad xl" data-act="wrong">✗ Wrong</button><button class="btn good xl" data-act="right">✓ Right</button></div>`;
+      return turnHead(t, 'Was it right?') + questionCard(q, `Round ${g.round} · question`) + `<div class="actions judge"><button class="btn good xl block" data-act="right"><span class="mk">✓ </span>Right</button><button class="btn bad xl block" data-act="wrong"><span class="mk">✗ </span>Wrong</button></div>`;
     }
     case 'explain':
-      return turnHead(t, 'Not this time') + `<div class="qcard"><div class="tag">The answer</div><div class="prompt">${esc(q.prompt)}</div><div class="answer"><small>Answer</small><b>${esc(q.answer)}</b></div><div class="explain">${esc(q.explanation || '')}</div></div>
+      return turnHead(t, 'Not this time') + `<div class="qcard"><div class="tag">The answer</div><div class="prompt">${esc(q.prompt)}${q.type === 'image' ? ' ' + qPic(q, 'qp-s') : ''}</div><div class="answer"><small>Answer</small><b>${esc(q.answer)}</b></div><div class="explain">${esc(q.explanation || '')}</div></div>
         <div class="actions"><button class="btn gold xl block" data-act="next">${nextLabel()} →</button><button class="link undo" data-act="undo">Undo — it was right</button></div>`;
     case 'powerup': {
       const n = g.offer.length;
@@ -252,16 +253,16 @@ function panelHTML() {
     }
     case 'boost':
       if (!g.revealed) return turnHead(t, 'Knowledge Boost') + questionCard(q, 'Bonus question · right = pocket × 2') + `<div class="actions">${clueBtn(q)}<button class="btn gold xl block" data-act="reveal">Show answer</button></div>`;
-      return turnHead(t, 'Knowledge Boost') + questionCard(q, 'Bonus question') + `<div class="actions two"><button class="btn bad xl" data-act="boostNo">✗ Wrong</button><button class="btn good xl" data-act="boostYes">✓ Right</button></div>`;
+      return turnHead(t, 'Knowledge Boost') + questionCard(q, 'Bonus question') + `<div class="actions judge"><button class="btn good xl block" data-act="boostYes"><span class="mk">✓ </span>Right</button><button class="btn bad xl block" data-act="boostNo"><span class="mk">✗ </span>Wrong</button></div>`;
     case 'aim': {
       const p = g.power ? powerById(g.power) : null;
       const pic = p && !['shield', 'boost'].includes(p.id) ? `<img class="ball" src="${powerIcon(p.id, 260)}" alt="">` : `<span class="ball" style="--c:${t.color};background-image:url(${teamImg(t)})"></span>`;
       const extras = [g.pocketMul > 1 ? '<span class="badge">🧠 Pocket × 2</span>' : '', t.shield ? '<span class="badge">🛡 Shield ready</span>' : ''].join(' ');
       return turnHead(t, 'Drop the ball!') + `<div class="ballbox">${pic}<h3>${p && !['shield', 'boost'].includes(p.id) ? esc(p.name) : 'Your ball'}</h3><p>${p && !['shield', 'boost'].includes(p.id) ? esc(p.blurb) : 'Tap a number at the top of the board. Gold pegs pay 50, spikes take 40 away!'}</p><div>${extras}</div></div>
-        <div class="actions"><button class="btn gold xl block ${g.slot >= 0 ? 'pulse' : ''}" data-act="drop" ${g.slot >= 0 ? '' : 'disabled'}>${g.slot >= 0 ? `DROP from ${g.slot + 1}!` : 'Pick a number ↑'}</button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
+        <div class="actions"><div class="hint ${g.slot >= 0 ? 'go' : ''}">${g.slot >= 0 ? `Spot ${g.slot + 1} — ready!` : 'Tap a number at the top of the board'}</div><button class="btn-pic drop ${g.slot >= 0 ? 'pulse' : ''}" data-act="drop" aria-label="Drop" ${g.slot >= 0 ? '' : 'disabled'}><span>DROP!</span></button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
     }
     case 'drop':
-      return turnHead(t, 'Dropping…') + `<div class="live"><small>Turn score</small><div class="num" id="liveNum">0</div><div class="breakdown" id="liveBd"></div></div>`;
+      return turnHead(t, 'Dropping…') + (g.power && !['shield', 'boost'].includes(g.power) ? `<div class="inplay"><img src="${powerIcon(g.power, 200)}" alt=""><b>${esc(powerById(g.power).name)}</b></div>` : '') + `<div class="live"><small>Turn score</small><div class="num" id="liveNum">0</div><div class="breakdown" id="liveBd"></div></div>`;
     case 'result': {
       const r = g.lastResult, rows = [['Pegs', r.pegScore], ['Pocket', r.pocketScore]];
       if (r.coinScore) rows.push(['Coins', r.coinScore]);
@@ -275,7 +276,7 @@ function panelHTML() {
     case 'practice':
       return `<div class="big-msg" style="margin-top:20px"><h2>Practice drop</h2><p>Tap a number at the top of the board to drop a ball. Try it a few times — it does not count!</p></div>
         <div class="ballbox"><span class="ball" style="--c:${g.teams[0].color};background-image:url(${teamImg(g.teams[0])})"></span><p>Pegs give points, spikes take points away. Each pocket has a gold gate: the first bump opens it.</p></div>
-        <div class="actions"><button class="btn gold xl block pulse" data-act="endPractice">Start! ▶</button></div>`;
+        <div class="actions"><button class="btn-pic start pulse" data-act="endPractice" aria-label="Start"><span>START</span></button></div>`;
   }
   return '';
 }
@@ -290,12 +291,13 @@ function nextLabel() {
 let shownScores = [], scoreKey = '';
 function renderScores() {
   const ranks = [...g.teams].map((t, i) => [t.score, i]).sort((a, b) => b[0] - a[0]);
-  const rankOf = (i) => ranks.findIndex((r) => r[1] === i) + 1;
-  const key = g.teams.map((t) => [t.stars, t.shield, t.name].join()).join('|') + '|' + g.turn + g.phase + ranks.map((r) => r[1]).join();
+  const rankOf = (i) => ranks.findIndex((r) => r[0] === g.teams[i].score) + 1; // teams with the same score share a place
+  const anyScore = g.teams.some((t) => t.score > 0);
+  const key = g.teams.map((t) => [t.stars, t.shield, t.name, rankOf(g.teams.indexOf(t))].join()).join('|') + '|' + g.turn + g.phase + anyScore;
   if (key !== scoreKey) {
     scoreKey = key;
-    $('#scores').innerHTML = g.teams.map((t, i) => `<div class="srow ${i === g.turn && !(g.mode === 'class' && !g.classDrop) ? 'on' : ''}" style="--c:${t.color}">
-      <span class="rk ${rankOf(i) === 1 && t.score > 0 ? 'r1' : ''}">${rankOf(i)}</span>
+    $('#scores').innerHTML = g.teams.map((t, i) => `<div class="srow ${i === g.turn && g.phase !== 'practice' && !(g.mode === 'class' && !g.classDrop) ? 'on' : ''}" style="--c:${t.color}">
+      ${anyScore ? `<span class="rk ${rankOf(i) === 1 ? 'r1' : ''}">${rankOf(i)}</span>` : ''}
       <span class="pic" style="background-image:url(${teamImg(t)})"></span>
       <span class="nm"><b>${esc(t.name)}</b><span class="st">${[0, 1, 2].map((k) => `<i class="${k < t.stars ? 'on' : ''}"></i>`).join('')}${t.shield ? `<img class="sh-ic" src="${powerIcon('shield', 52)}" alt="shield">` : ''}</span></span>
       <span class="sc" data-sc="${i}">${Math.round(shownScores[i] || 0)}</span></div>`).join('');
@@ -322,6 +324,7 @@ function renderLegend() {
 
 /* ------------------------------------------------------------ the frame loop */
 let last = performance.now(), liveShown = 0;
+const preview = { board: null, drop: null };
 function frame(now) {
   const dt = Math.min(1 / 30, (now - last) / 1000); last = now;
   if (screen === 'game' && g) {
@@ -331,8 +334,11 @@ function frame(now) {
       if (practice && practice.started) { practice.step(dt); if (practice.done && !practice.floats.length) practice = null; }
       if ((g.phase === 'question' || g.phase === 'boost') && settings.timeLimit && !g.revealed) tickTimer();
     }
-    const d = g.phase === 'practice' ? practice : drop;
-    view.render(paused ? 0 : dt, { board: g.phase === 'practice' ? g.practiceBoard : g.board || g.lastBoard, drop: d, phase: g.phase === 'practice' ? (practice ? 'drop' : 'practice') : g.phase, slot: g.slot, team: { color: team().color, img: teamImg(team()) }, power: g.power, reduced });
+    // before the ball is released, a resting copy of the drop shows the bumpers and gates of this board
+    const shownBoard = g.phase === 'practice' ? g.practiceBoard : g.board || g.lastBoard;
+    if (shownBoard && preview.board !== shownBoard) { preview.board = shownBoard; preview.drop = new Drop(shownBoard, { springGates: settings.springGates, movingBumper: settings.movingBumper }); }
+    const d = (g.phase === 'practice' ? practice : drop) || (shownBoard ? preview.drop : null);
+    view.render(paused ? 0 : dt, { board: shownBoard, drop: d, phase: g.phase === 'practice' ? (practice ? 'drop' : 'practice') : g.phase, slot: g.slot, team: { color: team().color, img: teamImg(team()) }, power: g.power, reduced });
     if (g.board) g.lastBoard = g.board;
     if (g.phase === 'drop' && drop) {
       const v = drop.turnScore; liveShown += (v - liveShown) * Math.min(1, dt * 10);
@@ -432,7 +438,7 @@ function beginGame(withPractice) {
 function openHowto(starting) {
   const ic = (ids) => ids.map((id) => `<img src="${powerIcon(id, 172)}" alt="">`).join('');
   $('#howto').innerHTML = `<div class="glass howto"><h2 class="title">How to play</h2><div class="steps">
-    <div class="step"><span class="n">1</span><h3>Answer the question</h3><div class="pics"><span style="font-size:80px">❓</span></div><p>The team answers. The teacher shows the answer and taps <b>Right</b> or <b>Wrong</b>. ${settings.mode === 'class' ? 'In “Everyone answers” mode every team writes an answer, then every team drops.' : ''}</p></div>
+    <div class="step"><span class="n">1</span><h3>Answer the question</h3><div class="pics">${META.sprites['q-mark'] ? `<img src="${artURL('q-mark')}" alt="">` : '<span style="font-size:80px">?</span>'}</div><p>The team answers. The teacher shows the answer and taps <b>Right</b> or <b>Wrong</b>. ${settings.mode === 'class' ? 'In “Everyone answers” mode every team writes an answer, then every team drops.' : ''}</p></div>
     <div class="step"><span class="n">2</span><h3>Collect stars, pick a power-up</h3><div class="pics">${ic(['dynamite', 'balloon', 'popcorn'])}</div><p>Land in pockets with ★ to collect stars. On your next right answer each star turns over one power-up card (up to 3) — pick ONE or skip it.</p></div>
     <div class="step"><span class="n">3</span><h3>Drop the ball</h3><div class="pics"><img src="${pegIcon('gold', 120)}" alt=""><img src="${pegIcon('mint', 120)}" alt=""><img src="${pegIcon('spike', 120)}" alt=""></div><p>Pick one of 10 spots at the top. Pegs give points, spikes take points away. Each pocket has a gold gate: the first bump opens it, then a ball can land inside.</p></div>
   </div><div class="row">${starting ? '<button class="btn ghost lg" data-act="skipHowto">Skip — start now</button><button class="btn gold xl pulse" data-act="practice">Practice drop ▶</button>' : '<button class="btn gold xl" data-act="closeHowto">Got it!</button>'}</div></div>`;
@@ -448,7 +454,10 @@ function showFinal() {
   const tie = sorted.length > 1 && sorted[1].score === top.score;
   $('#winTitle').textContent = g.outOfQuestions ? 'Out of questions — final scores' : tie ? "It's a tie!" : `${top.name} wins!`;
   const pod = [sorted[1], sorted[0], sorted[2]].map((t, k) => t ? `<div class="pod p${[2, 1, 3][k]}" style="--c:${t.color}"><span class="pic" style="background-image:url(${teamImg(t)})"></span><b>${esc(t.name)}</b><span class="ps">${t.score}</span><div class="block">${[2, 1, 3][k]}</div></div>` : '').join('');
-  $('#podium').innerHTML = pod;
+  if (META.podium) {
+    const P = META.podium, order = [sorted[1], sorted[0], sorted[2]], xs = [1 / 6, 1 / 2, 5 / 6];
+    $('#podium').innerHTML = `<div class="podium-pic" style="aspect-ratio:${P.w}/${P.h}"><img class="pod-img" src="${artURL('podium')}" alt="">` + order.map((t, k) => t ? `<div class="pp p${[2, 1, 3][k]}" style="left:${xs[k] * 100}%;bottom:${(1 - P.tops[k] / P.h) * 100}%;--c:${t.color}"><b>${esc(t.name)}</b><span class="ps">${t.score}</span><span class="pic" style="background-image:url(${teamImg(t)})">${k === 1 && !tie && META.sprites.crown ? `<img class="crown" src="${artURL('crown')}" alt="">` : ''}</span></div>` : '').join('') + '</div>';
+  } else $('#podium').innerHTML = pod;
   $('#finScores').innerHTML = sorted.map((t, i) => `<div class="frow" style="--c:${t.color}"><span class="pic" style="background-image:url(${teamImg(t)})"></span><b>${i + 1}. ${esc(t.name)}<span class="xp">${t.correct}/${t.answered} right · ${t.xp} XP</span></b><span class="sc">${t.score}</span></div>`).join('');
   const total = g.answers.length, right = g.answers.filter((a) => a.correct).length;
   const wrong = [], seen = new Set(); g.answers.filter((a) => !a.correct).forEach((a) => { if (!seen.has(a.qid)) { seen.add(a.qid); wrong.push(a); } });
@@ -493,5 +502,42 @@ window.BL = {
   fast(n = 6) { window.__fast = n; },
   stars(n = 3) { team().stars = n; render(); },
 };
-show('setup');
-document.fonts && document.fonts.ready.then(() => { paintScene($('#scene')); if (g) render(); });
+
+// ?demo=<state> opens the game straight in one state (for checking the design at full size)
+function runDemo(d) {
+  const n = +(new URLSearchParams(location.search).get('teams') || 4);
+  if (d === 'setup') return;
+  if (d === 'teams') { settings.teamCount = n; return show('teams'); }
+  if (d === 'howto') { settings.teamCount = n; show('teams'); return openHowto(true); }
+  settings.teamCount = n; settings.mode = d.startsWith('class') ? 'class' : 'turn'; if (d === 'timer') settings.timeLimit = 30;
+  beginGame(d === 'practice');
+  const qid = new URLSearchParams(location.search).get('q'), qq = qid && SETS.flatMap((x) => x.questions).find((x) => x.id === qid); if (qq) { g.question = qq; panelKey = ''; render(); }
+  if (d === 'practice' || d === 'question' || d === 'timer' || d === 'class') return;
+  g.teams.forEach((t, i) => { t.score = [320, 545, 190, 410, 260, 75, 480, 130][i]; t.stars = [3, 1, 0, 2, 0, 1, 0, 0][i]; }); shownScores = g.teams.map((t) => t.score); scoreKey = '';
+  if (d === 'final') { g.teams.forEach((t) => { t.answered = 4; t.correct = 3; t.xp = 30; }); g.answers = [{ qid: 'v2', prompt: 'Opposite of “expensive”?', answer: 'cheap', correct: false }, { qid: 'v5', prompt: 'Past tense of “go”?', answer: 'went', correct: true }, { qid: 'v8', prompt: 'Plural of “child”?', answer: 'children', correct: true }]; g.phase = 'final'; return render(); }
+  act('reveal'); if (d === 'reveal') return;
+  if (d === 'classmark') { g.marks = { t1: true, t2: false }; panelKey = ''; return render(); }
+  if (d === 'explain') return judge(false);
+  judge(true); if (d === 'powerup') return;
+  if (g.phase === 'powerup') pickPower(d === 'drop' ? 'popcorn' : d === 'aimpower' ? 'balloon' : g.offer[0]);
+  if (d === 'aim' || d === 'aimpower') { g.slot = 6; return render(); }
+  g.slot = 3; release();
+  if (d === 'drop') return setTimeout(() => { paused = true; }, 2200);
+  window.__fast = 12; // 'result'
+}
+
+/* ------------------------------------------------------------ loading: every picture first, then the game appears */
+(function boot() {
+  const pics = ['bg-fair', 'logo', ...Object.keys(META.buttons), 'btn-round', 'podium', 'crown'].filter((n) => n === 'bg-fair' || n === 'logo' || META.sprites[n] || META.buttons[n] || (n === 'podium' && META.podium)).map(artURL)
+    .concat(CREW.map((c) => crewURL(c.id)));
+  const total = pics.length + artList().length + 1; let done = 0;
+  const bar = $('#loadBar'), tick = () => { done++; if (bar) bar.style.width = Math.round(done / total * 100) + '%'; };
+  const img = (src) => new Promise((res) => { const im = new Image(); im.onload = im.onerror = () => { tick(); res(); }; im.src = src; });
+  const fonts = (document.fonts ? document.fonts.load('40px "Lilita One"').then(() => document.fonts.ready) : Promise.resolve()).catch(() => {}).then(tick);
+  const all = Promise.all([loadArt(tick), fonts, ...pics.map(img)]);
+  Promise.race([all, new Promise((r) => setTimeout(r, 12000))]).then(() => {
+    show('setup');
+    const demo = new URLSearchParams(location.search).get('demo'); if (demo) { document.body.classList.add('noanim'); runDemo(demo); }
+    const l = $('#loader'); if (l) { l.classList.add('gone'); setTimeout(() => l.remove(), 700); }
+  });
+})();
