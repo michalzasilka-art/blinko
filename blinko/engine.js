@@ -1,7 +1,7 @@
 // Blinko — the peg board: building a board for a round, and the ball physics of one drop.
 // Board units: 600 × 820. Pegs between y 110 and 690, pocket gates at y 736, pockets to the bottom.
 // The physics and scoring follow the prototype exactly (same numbers), only the code is new.
-import { CONFIG, BW, BH, slotX } from './data.js';
+import { CONFIG, BW, BH, slotX, WORDS } from './data.js';
 
 const lowS = (v, low) => (low ? Math.max(1, Math.round(v / CONFIG.scoring.lowScoreDivisor)) : v);
 export const shuffle = (a, rng = Math.random) => { const n = [...a]; for (let i = n.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [n[i], n[j]] = [n[j], n[i]]; } return n; };
@@ -288,7 +288,7 @@ export class Drop {
     if (p.kind === 'spike') {
       if (!p.scored) {
         p.scored = true;
-        if (this.o.shield && !this.shieldUsed) { this.shieldUsed = true; this.floats.push({ x: p.x, y: p.y - 14, text: 'Helmet!', tone: 'info', t: 0 }); this.sound('shield'); this.feel(b, 'cheer', 0.8, 3); }
+        if (this.o.shield && !this.shieldUsed) { this.shieldUsed = true; this.floats.push({ x: p.x, y: p.y - 14, text: WORDS.helmet, tone: 'info', t: 0 }); this.sound('shield'); this.feel(b, 'cheer', 0.8, 3); }
         else { this.add(-p.points, p.x, p.y - 14, 'bad'); this.sound('spike'); this.shake = Math.max(this.shake, 0.35); this.feel(b, 'ouch', 0.9, 3); }
       }
     } else {
@@ -328,7 +328,7 @@ export class Drop {
         break;
       case 'zombie':
         if (b.hits % 2 === 0 && this.zombies < 4 && this.spawn('minizombie', b.x, b.y, { r: 7, pocketMul: 0.25, vx: (this.rng() - 0.5) * 260, vy: -160 })) {
-          this.zombies++; this.floats.push({ x: b.x, y: b.y - 20, text: 'Baby ladybug!', tone: 'info', t: 0 }); this.sound('zombie');
+          this.zombies++; this.floats.push({ x: b.x, y: b.y - 20, text: WORDS.baby, tone: 'info', t: 0 }); this.sound('zombie');
         }
         break;
       case 'balloon': if ((b.boosts || 0) > 0) { b.boosts--; b.vy = Math.min(b.vy, -170); } break;

@@ -1,8 +1,12 @@
 // Blinko — everything drawn on the board: the peg board, the nuts and the power-up pictures.
 // Forest version (2026-11-25): the team ball is Hazel's acorn, whose painted face follows its mood (art/nut-<mood>.webp).
 // The pictures are painted (art/*.webp); every one has a code-drawn stand-in. Board units are 600 × 820 (see engine.js).
-import { BW, BH, SLOTS, slotX } from './data.js';
-import { META } from './art/meta.js?v=3';
+import { BW, BH, SLOTS, slotX, THEME } from './data.js';
+import { META as META_FOREST } from './art/meta.js?v=3';
+import { META as META_XMAS } from './art/xmas/meta.js?v=1';
+// the season's pictures: art/xmas/<name>.webp where the Christmas set has one, else the autumn art/<name>.webp
+export const META = THEME === 'xmas' ? META_XMAS : META_FOREST;
+const OWN = new Set(THEME === 'xmas' ? META_XMAS.own || [] : []);
 
 const TAU = Math.PI * 2;
 
@@ -27,7 +31,7 @@ function smile(c, R, y = 0.22, w = 0.32, open = false) {
 /* painted pictures (ChatGPT, prepared by Foxino/Blinko/Art/build_art.py → art/*.webp + art/meta.js).
    The code drawings below stay as the fallback while a picture is loading (or if one is missing). */
 const SPR = new Map();
-export const artURL = (name) => `art/${name}.webp?v=3`;
+export const artURL = (name) => (OWN.has(name) ? `art/xmas/${name}.webp?v=${META_XMAS.v || 1}` : `art/${name}.webp?v=3`);
 const SPRITE_OF = { yin: 'pu-yinyang', yang: 'pu-yinyang', minizombie: 'pu-zombie', coin: 'coin', chick: 'chick', kernel: META.sprites.seed ? 'seed' : 'kernel' };
 export const MOODS = ['happy', 'cheer', 'wheee', 'bonk', 'stars', 'ouch', 'dizzy', 'sad', 'love'];
 const POWER_IDS = ['dynamite', 'yoyo', 'bouncy', 'egg', 'turtle', 'cow', 'balloon', 'puffer', 'oinky', 'shark', 'yinyang', 'popcorn', 'bowling', 'zombie', 'shield', 'boost'];
@@ -45,6 +49,12 @@ export const hasArt = (name) => SPR.has(name);
 function sprite(c, name, size) {
   const im = SPR.get(name); if (!im) return false;
   const k = size / Math.max(im.naturalWidth, im.naturalHeight); c.drawImage(im, -im.naturalWidth * k / 2, -im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); return true;
+}
+// the acorn's face for a mood, sized by its width and placed by its round body (a stem or a Santa hat may stick out on top)
+function nutSprite(c, mood, size) {
+  const im = SPR.get('nut-' + mood) || SPR.get('nut-happy'); if (!im) return false;
+  const w = im.naturalWidth, h = im.naturalHeight, k = size * 0.875 / w;
+  c.drawImage(im, -w * k / 2, size * 0.06 - (h - w * 0.5) * k, w * k, h * k); return true;
 }
 export function drawThing(c, k, R, t = 0, extra = {}) {
   const name = SPRITE_OF[k] || (POWER_IDS.includes(k) ? 'pu-' + k : null);
@@ -274,13 +284,21 @@ export class BoardView {
       if (i === 1 && j === 1) continue;
       c.drawImage(im, sxs[i], sys[j], sxs[i + 1] - sxs[i], sys[j + 1] - sys[j], dxs[i] - 0.5, dys[j] - 0.5, dxs[i + 1] - dxs[i] + 1, dys[j + 1] - dys[j] + 1);
     }
-    if (f.bulbs === false) return; // the wooden frame has no light bulbs
+    if (f.bulbs === false) return; // the autumn wooden frame has no light bulbs
+    const xmas = f.bulbs === 'xmas', XC = ['#ff4b4b', '#ffd23d', '#3fd06a', '#5fb2ff'];
     // bulbs along the middle of the frame
     const bx = x0 + L * s / 2, by = y0 + T * s / 2, w = x1 - R * s / 2 - bx, h = y1 - B * s / 2 - by;
     const rad = Math.max(8, (f.outer || cs + t) * s - t / 2), per = 2 * (w + h - 4 * rad) + TAU * rad, n = Math.round(per / 34);
     for (let i = 0; i < n; i++) {
       const [px, py] = rperim(bx, by, w, h, rad, (i / n) * per);
       const on = ((i + Math.floor(this.marq)) % 3) === 0;
+      if (xmas) { // coloured Christmas lights, all lit, a chase of brighter ones
+        const col = XC[i % XC.length], a = on ? 0.95 : 0.5, gg = c.createRadialGradient(px, py, 0, px, py, on ? 17 : 11);
+        gg.addColorStop(0, col + (on ? 'ee' : '88')); gg.addColorStop(1, col + '00'); c.fillStyle = gg; c.beginPath(); c.arc(px, py, on ? 17 : 11, 0, TAU); c.fill();
+        c.globalAlpha = a + 0.05; c.fillStyle = col; c.beginPath(); c.ellipse(px, py, 4.6, 6, 0, 0, TAU); c.fill(); c.globalAlpha = 1;
+        c.fillStyle = on ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.45)'; c.beginPath(); c.arc(px - 1.4, py - 2, 1.6, 0, TAU); c.fill();
+        c.fillStyle = '#2f5a2a'; c.fillRect(px - 2.2, py - 8.5, 4.4, 3); continue;
+      }
       if (on) { const gg = c.createRadialGradient(px, py, 0, px, py, 15); gg.addColorStop(0, 'rgba(255,236,150,.95)'); gg.addColorStop(1, 'rgba(255,236,150,0)'); c.fillStyle = gg; c.beginPath(); c.arc(px, py, 15, 0, TAU); c.fill(); }
       c.fillStyle = on ? '#fffbe6' : '#f0b24a'; c.beginPath(); c.arc(px, py, 5.2, 0, TAU); c.fill();
       c.lineWidth = 1.4; c.strokeStyle = 'rgba(90,30,10,.65)'; c.stroke();
@@ -404,7 +422,7 @@ export class BoardView {
       // the team's acorn: a ring in the team colour behind it, the painted face for its mood on top
       c.save(); c.lineWidth = R * 0.3; c.strokeStyle = team ? team.color : '#ffb43a'; c.globalAlpha = 0.9; c.beginPath(); c.arc(0, R * 0.1, R * 1.16, 0, TAU); c.stroke(); c.restore();
       c.save(); c.rotate(Math.sin(b.rot || 0) * 0.25);
-      if (!sprite(c, 'nut-' + mood, R * 2.8) && !sprite(c, 'nut-happy', R * 2.8)) drawAcorn(c, R * 1.14, mood);
+      if (!nutSprite(c, mood, R * 2.8)) drawAcorn(c, R * 1.14, mood);
       c.restore();
     } else {
       c.save();
@@ -419,7 +437,7 @@ export class BoardView {
     const pop = t < 0.18 ? 0.5 + t / 0.18 * 0.7 : t < 0.3 ? 1.2 - (t - 0.18) / 0.12 * 0.2 : 1, fade = t > life * 0.72 ? Math.max(0, 1 - (t - life * 0.72) / (life * 0.28)) : 1;
     c.save(); c.globalAlpha = fade; c.translate(e.x, y); c.scale(pop, pop);
     if (e.mood === 'love' || e.mood === 'cheer') for (let i = 0; i < 3; i++) { const a = t * 2 + i * 2.1, rr = R * 1.5; if (e.mood === 'love') heart(c, Math.cos(a) * rr, Math.sin(a) * rr * 0.6 - R * 0.4, R * 0.28, '#ff5c8a'); else goldStar(c, Math.cos(a) * rr, Math.sin(a) * rr * 0.6 - R * 0.4, R * 0.24); }
-    if (e.k === 'normal') { c.lineWidth = R * 0.26; c.strokeStyle = s.team ? s.team.color : '#ffb43a'; c.globalAlpha = fade * 0.9; c.beginPath(); c.arc(0, R * 0.08, R * 1.02, 0, TAU); c.stroke(); c.globalAlpha = fade; if (!sprite(c, 'nut-' + e.mood, R * 2.45)) drawAcorn(c, R, e.mood); }
+    if (e.k === 'normal') { c.lineWidth = R * 0.26; c.strokeStyle = s.team ? s.team.color : '#ffb43a'; c.globalAlpha = fade * 0.9; c.beginPath(); c.arc(0, R * 0.08, R * 1.02, 0, TAU); c.stroke(); c.globalAlpha = fade; if (!nutSprite(c, e.mood, R * 2.45)) drawAcorn(c, R, e.mood); }
     else { drawThing(c, e.k, R, this.time, e); emote(c, R, e.mood, this.time); }
     c.restore();
   }

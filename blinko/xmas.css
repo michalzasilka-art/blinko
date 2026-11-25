@@ -1,0 +1,7 @@
+/* Blinko — the Christmas look (html[data-theme="xmas"], the default now; ?theme=forest shows the autumn forest). Loaded last. */
+html[data-theme="xmas"] #scene { background-image: url(art/xmas/bg-xmas.webp?v=1); }
+html[data-theme="xmas"] #scene::after { background: radial-gradient(ellipse at 50% 45%, rgba(14, 18, 48, 0) 45%, rgba(14, 18, 48, .42) 100%); }
+#snow { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; }
+html[data-theme="xmas"] { --glass: rgba(52, 30, 26, .74); }
+html[data-theme="xmas"] #loader { background: radial-gradient(ellipse at 50% 40%, #3f5aa8 0%, #121a3e 75%); }
+html[data-theme="xmas"] .feel .say { color: #fffaf0; }

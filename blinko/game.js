@@ -1,14 +1,14 @@
 // Blinko — the game: setup, teams, the turn flow, the panels and the final podium.
 // The turn flow is the prototype's ("Foxino Drop"): answer → (stars unlock power-up cards) → pick a release spot → drop → score.
-import { CONFIG, SETS, POWERS, PEGS, CREW, TEAM_COLORS, TEAM_NAMES, TEAM_CREW, crewURL, powerById } from './data.js';
+import { CONFIG, SETS, POWERS, PEGS, CREW, TEAM_COLORS, TEAM_NAMES, TEAM_CREW, crewURL, powerById, THEME, WORDS } from './data.js';
 import { makeBoard, Drop, shuffle } from './engine.js';
-import { BoardView, powerIcon, pegIcon, ballKind, loadArt, artList, artURL } from './art.js';
-import { META } from './art/meta.js?v=3';
+import { BoardView, powerIcon, pegIcon, ballKind, loadArt, artList, artURL, META } from './art.js';
 import { sfx, unlock, setMuted, isMuted } from './sound.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+document.querySelectorAll('img[data-art]').forEach((im) => { im.src = artURL(im.dataset.art); });
 const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -52,7 +52,7 @@ function renderSetup() {
     <div class="field"><label>Time to answer</label>${seg('timeLimit', [[0, 'Off'], [20, '20 s'], [30, '30 s'], [60, '60 s']], settings.timeLimit)}</div>
     <div class="field"><label>Mode</label>${seg('mode', [['turn', 'Team turns'], ['class', 'Everyone answers']], settings.mode, 'text')}</div>
     <div class="field wide"><label>Board extras</label><div class="toggles">
-      ${tog('spikes', 'Thistles')}${tog('springGates', 'Spring gates')}${tog('movingBumper', 'Busy bee')}
+      ${tog('spikes', WORDS.spikes)}${tog('springGates', 'Spring gates')}${tog('movingBumper', WORDS.bumper)}
       ${tog('repeat', 'Repeat questions')}${tog('lowScore', 'Small numbers')}
     </div></div>`;
   $('#powerGrid').innerHTML = POWERS.map((p) => `<button class="pw ${settings.powers[p.id] ? '' : 'off'} ${p.extra ? 'extra' : ''}" data-pw="${p.id}" title="${esc(p.blurb)}"><img src="${powerIcon(p.id, 168)}" alt=""><span>${esc(p.name)}</span></button>`).join('');
@@ -121,9 +121,10 @@ function feel(right, t) {
   const el = $('#feel'); if (!el) return;
   el.style.setProperty('--c', t ? t.color : '#ffb43a');
   el.className = 'feel ' + (right ? 'yay' : 'aww');
-  el.innerHTML = `<div class="say">${right ? pickOne(['Yay!', 'Hooray!', 'Well done!', 'Super!', 'Brilliant!']) : pickOne(['Nice try!', 'Almost!', 'Next time!'])}</div>
+  el.innerHTML = `<div class="say">${right ? pickOne(WORDS.yay) : pickOne(WORDS.aww)}</div>
     <img class="hz" src="${hazel(right ? 'cheer' : 'oops')}" alt=""><span class="nutpop">${nutBall(t || { color: '#ffb43a' }, right ? 'cheer' : 'sad', 'ball nut big')}</span>`;
   void el.offsetWidth; el.classList.add('on');
+  if (right && THEME === 'xmas') sfx('jingle');
   if (right && !reduced) leafBurst(960, 560, 70);
   clearTimeout(feelT); feelT = setTimeout(() => el.classList.remove('on'), right ? 2000 : 1800);
 }
@@ -273,13 +274,13 @@ function panelHTML() {
         <div class="actions"><button class="btn ghost lg block" data-act="skipPower">Skip — my acorn</button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
     }
     case 'boost':
-      if (!g.revealed) return turnHead(t, 'Wise Owl') + questionCard(q, 'Bonus question · right = basket × 2') + `<div class="actions">${clueBtn(q)}<button class="btn gold xl block" data-act="reveal">Show answer</button></div>`;
-      return turnHead(t, 'Wise Owl') + questionCard(q, 'Bonus question') + `<div class="actions judge"><button class="btn good xl block" data-act="boostYes"><span class="mk">✓ </span>Right</button><button class="btn bad xl block" data-act="boostNo"><span class="mk">✗ </span>Wrong</button></div>`;
+      if (!g.revealed) return turnHead(t, WORDS.owl) + questionCard(q, 'Bonus question · right = basket × 2') + `<div class="actions">${clueBtn(q)}<button class="btn gold xl block" data-act="reveal">Show answer</button></div>`;
+      return turnHead(t, WORDS.owl) + questionCard(q, 'Bonus question') + `<div class="actions judge"><button class="btn good xl block" data-act="boostYes"><span class="mk">✓ </span>Right</button><button class="btn bad xl block" data-act="boostNo"><span class="mk">✗ </span>Wrong</button></div>`;
     case 'aim': {
       const p = g.power ? powerById(g.power) : null;
       const pic = p && !['shield', 'boost'].includes(p.id) ? `<img class="ball" src="${powerIcon(p.id, 260)}" alt="">` : nutBall(t, 'happy');
-      const extras = [g.pocketMul > 1 ? '<span class="badge">🦉 Basket × 2</span>' : '', t.shield ? '<span class="badge">🌰 Helmet ready</span>' : ''].join(' ');
-      return turnHead(t, 'Drop the nut!') + `<div class="ballbox">${pic}<h3>${p && !['shield', 'boost'].includes(p.id) ? esc(p.name) : 'Your acorn'}</h3><p>${p && !['shield', 'boost'].includes(p.id) ? esc(p.blurb) : 'Tap a number at the top of the board. Golden acorns pay 50, thistles take 40 away!'}</p><div>${extras}</div></div>
+      const extras = [g.pocketMul > 1 ? '<span class="badge">🦉 Basket × 2</span>' : '', t.shield ? `<span class="badge">${WORDS.helmetReady}</span>` : ''].join(' ');
+      return turnHead(t, 'Drop the nut!') + `<div class="ballbox">${pic}<h3>${p && !['shield', 'boost'].includes(p.id) ? esc(p.name) : 'Your acorn'}</h3><p>${p && !['shield', 'boost'].includes(p.id) ? esc(p.blurb) : WORDS.aimHint}</p><div>${extras}</div></div>
         <div class="actions"><div class="hint ${g.slot >= 0 ? 'go' : ''}">${g.slot >= 0 ? `Spot ${g.slot + 1} — ready!` : 'Tap a number at the top of the board'}</div><button class="btn-pic drop ${g.slot >= 0 ? 'pulse' : ''}" data-act="drop" aria-label="Drop" ${g.slot >= 0 ? '' : 'disabled'}><span>DROP!</span></button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
     }
     case 'drop':
@@ -291,12 +292,12 @@ function panelHTML() {
       return turnHead(t, 'Turn score') + `<div class="live">${nutBall(t, scoreMood(r.score), 'ball nut mood')}<div class="num ${r.score < 0 ? 'neg' : ''}">${r.score > 0 ? '+' : ''}${r.score}</div>
         <div class="breakdown">${rows.map(([l, v], i) => `<div class="${v < 0 ? 'neg' : 'pos'}" style="animation-delay:${i * 0.1}s"><span>${l}</span><b>${v > 0 ? '+' : ''}${v}</b></div>`).join('')}
         ${r.stars ? `<div class="pos" style="animation-delay:.4s"><span>Stars for next time</span><b style="color:#ffe14d">${'★'.repeat(r.stars)}</b></div>` : ''}
-        ${r.shieldUsed ? '<div class="pos"><span>The helmet blocked a thistle</span><b>🌰</b></div>' : ''}</div></div>
+        ${r.shieldUsed ? `<div class="pos"><span>${WORDS.helmetBlocked}</span><b>✓</b></div>` : ''}</div></div>
         <div class="actions"><button class="btn gold xl block pulse" data-act="next">${nextLabel()} →</button></div>`;
     }
     case 'practice':
       return `<div class="big-msg" style="margin-top:20px"><h2>Practice drop</h2><p>Tap a number at the top of the board to drop an acorn. Try it a few times — it does not count!</p></div>
-        <div class="ballbox">${nutBall(g.teams[0], 'wheee')}<p>Pegs give points, thistles take points away. Each basket has a wooden gate: the first bump opens it.</p></div>
+        <div class="ballbox">${nutBall(g.teams[0], 'wheee')}<p>${WORDS.practice}</p></div>
         <div class="actions"><button class="btn-pic start pulse" data-act="endPractice" aria-label="Start"><span>START</span></button></div>`;
   }
   return '';
@@ -369,7 +370,7 @@ function frame(now) {
     } else liveShown = 0;
     tickScores(dt);
   }
-  confettiStep(dt);
+  confettiStep(dt); snowStep(dt);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -461,7 +462,7 @@ function openHowto(starting) {
   $('#howto').innerHTML = `<div class="glass howto"><h2 class="title">How to play</h2><div class="steps">
     <div class="step"><span class="n">1</span><h3>Answer the question</h3><div class="pics">${META.sprites['q-mark'] ? `<img src="${artURL('q-mark')}" alt="">` : '<span style="font-size:80px">?</span>'}</div><p>The team answers. The teacher shows the answer and taps <b>Right</b> or <b>Wrong</b>. ${settings.mode === 'class' ? 'In “Everyone answers” mode every team writes an answer, then every team drops.' : ''}</p></div>
     <div class="step"><span class="n">2</span><h3>Collect stars, pick a power-up</h3><div class="pics">${ic(['dynamite', 'balloon', 'popcorn'])}</div><p>Land in baskets with ★ to collect stars. On your next right answer each star turns over one power-up card (up to 3) — pick ONE or skip it.</p></div>
-    <div class="step"><span class="n">3</span><h3>Drop the acorn</h3><div class="pics"><img src="${pegIcon('gold', 120)}" alt=""><img src="${pegIcon('mint', 120)}" alt=""><img src="${pegIcon('spike', 120)}" alt=""></div><p>Pick one of 10 spots at the top. Berries, clovers and golden acorns give points, thistles take points away. Each basket has a wooden gate: the first bump opens it, then an acorn can land inside.</p></div>
+    <div class="step"><span class="n">3</span><h3>Drop the acorn</h3><div class="pics"><img src="${pegIcon('gold', 120)}" alt=""><img src="${pegIcon('mint', 120)}" alt=""><img src="${pegIcon('spike', 120)}" alt=""></div><p>${WORDS.howto3}</p></div>
   </div><div class="row">${starting ? '<button class="btn ghost lg" data-act="skipHowto">Skip — start now</button><button class="btn gold xl pulse" data-act="practice">Practice drop ▶</button>' : '<button class="btn gold xl" data-act="closeHowto">Got it!</button>'}</div></div>`;
   $('#howto').classList.add('on');
 }
@@ -487,7 +488,7 @@ function showFinal() {
     ${g.teams.map((t) => `<div class="acc"><div class="top"><span>${esc(t.name)}</span><span>${t.answered ? Math.round(t.correct / t.answered * 100) : 0}%</span></div><div class="bar"><i data-w="${t.answered ? t.correct / t.answered * 100 : 0}"></i></div></div>`).join('')}
     <div class="review"><h4>Practise these again</h4>${wrong.length ? wrong.map((a) => `<div>${esc(a.prompt)} → <b>${esc(a.answer)}</b></div>`).join('') : '<div class="none">No wrong answers — brilliant!</div>'}</div>`;
   setTimeout(() => $$('#learn .bar i').forEach((i) => { i.style.width = i.dataset.w + '%'; }), 300);
-  sfx('drumroll'); setTimeout(() => { sfx('win'); confettiStart(); }, 1300);
+  sfx('drumroll'); setTimeout(() => { sfx('win'); if (THEME === 'xmas') sfx('jingle'); confettiStart(); }, 1300);
 }
 
 /* ------------------------------------------------------------ confetti */
@@ -497,7 +498,7 @@ function confettiStart() { confettiOn = true; }
 function confettiStop() { confettiOn = false; bits = []; cx.clearRect(0, 0, 1920, 1080); }
 // a burst of autumn leaves and gold from one point (a right answer)
 function leafBurst(x, y, n) {
-  const cols = ['#ff9f1c', '#ffcf2e', '#e8572a', '#7cc255', '#c0702a', '#ffe08a'];
+  const cols = THEME === 'xmas' ? ['#e8303a', '#ffd23d', '#2fa84f', '#ffffff', '#ffffff', '#c9e8ff'] : ['#ff9f1c', '#ffcf2e', '#e8572a', '#7cc255', '#c0702a', '#ffe08a'];
   for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = 380 + Math.random() * 620; bits.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 420, g: 900, r: Math.random() * 6, vr: (Math.random() - 0.5) * 14, w: 12 + Math.random() * 12, h: 8 + Math.random() * 8, c: cols[i % cols.length] }); }
 }
 function confettiStep(dt) {
@@ -507,6 +508,22 @@ function confettiStep(dt) {
   for (const b of bits) { b.vy += (b.g || 0) * dt; b.x += b.vx * dt + Math.sin(b.y / 40) * 1.2; b.y += b.vy * dt; b.r += b.vr * dt; cx.save(); cx.translate(b.x, b.y); cx.rotate(b.r); cx.scale(1, Math.cos(b.r * 2)); cx.fillStyle = b.c; cx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); cx.restore(); }
   bits = bits.filter((b) => b.y < 1120);
   if (screen !== 'final') confettiOn = false;
+}
+
+/* ------------------------------------------------------------ falling snow behind the screens (Christmas only) */
+const snowCv = $('#snow'), sx = snowCv && THEME === 'xmas' ? snowCv.getContext('2d') : null;
+const newFlake = (anywhere) => { const z = Math.random(); return { x: Math.random() * 1920, y: anywhere ? Math.random() * 1080 : -12, r: 1.6 + z * 4.4, vy: 22 + z * 64, sw: Math.random() * 6.3, a: 0.45 + z * 0.5 }; };
+let flakes = [];
+if (sx) { snowCv.width = 1920; snowCv.height = 1080; flakes = Array.from({ length: reduced ? 50 : 150 }, () => newFlake(true)); } else if (snowCv) snowCv.remove();
+let snowDrawn = false;
+function snowStep(dt) {
+  if (!sx || (reduced && snowDrawn)) return;
+  snowDrawn = true; sx.clearRect(0, 0, 1920, 1080); sx.fillStyle = '#fff';
+  for (const f of flakes) {
+    if (!reduced) { f.y += f.vy * dt; f.sw += dt * 0.9; f.x += Math.sin(f.sw) * 14 * dt; if (f.y > 1092) Object.assign(f, newFlake(false)); }
+    sx.globalAlpha = f.a; sx.beginPath(); sx.arc(f.x, f.y, f.r, 0, Math.PI * 2); sx.fill();
+  }
+  sx.globalAlpha = 1;
 }
 
 /* ------------------------------------------------------------ toast + keyboard */
@@ -555,7 +572,8 @@ function runDemo(d) {
 
 /* ------------------------------------------------------------ loading: every picture first, then the game appears */
 (function boot() {
-  const pics = ['bg-fair', 'logo', ...Object.keys(META.buttons), 'btn-round', 'podium', 'crown'].filter((n) => n === 'bg-fair' || n === 'logo' || META.sprites[n] || META.buttons[n] || (n === 'podium' && META.podium)).map(artURL)
+  const BG = THEME === 'xmas' && (META.own || []).includes('bg-xmas') ? 'bg-xmas' : 'bg-forest';
+  const pics = [BG, 'logo', 'squirrel-hold', 'squirrel-cheer', 'squirrel-oops', ...Object.keys(META.buttons), 'btn-round', 'podium', 'crown'].filter((n) => n === BG || n === 'logo' || META.sprites[n] || META.buttons[n] || (n === 'podium' && META.podium)).map(artURL)
     .concat(CREW.map((c) => crewURL(c.id)));
   const total = pics.length + artList().length + 1; let done = 0;
   const bar = $('#loadBar'), tick = () => { done++; if (bar) bar.style.width = Math.round(done / total * 100) + '%'; };

@@ -74,6 +74,7 @@ export function sfx(name, v) {
     case 'laser': tone(1760, 0.12, 'sine', 0.05, { slide: 1.3 }); tone(2637, 0.15, 'sine', 0.025, { at: 0.04 }); break; // the firefly's twinkle
     case 'splash': noise(0.2, 0.07, { f: 1500, slide: 0.5 }); break;
     case 'zombie': tone(1568, 0.06, 'sine', 0.05); tone(2093, 0.08, 'sine', 0.04, { at: 0.07 }); break; // a baby ladybug's chirp
+    case 'jingle': for (let i = 0; i < 7; i++) { const at = i * 0.07 + (i > 3 ? 0.12 : 0); noise(0.09, 0.05, { at, f: 7200, q: 3 }); tone(2637 + (i % 2) * 520, 0.16, 'sine', 0.025, { at }); tone(3951, 0.1, 'sine', 0.012, { at: at + 0.01 }); } break; // sleigh bells
     case 'click': tone(700, 0.05, 'triangle', 0.06); break;
     case 'select': tone(880, 0.07, 'triangle', 0.06); tone(1320, 0.09, 'sine', 0.04, { at: 0.05 }); break;
     case 'flip': noise(0.12, 0.05, { f: 2000, slide: 1.8 }); tone(600, 0.1, 'triangle', 0.04, { slide: 1.5 }); break;

@@ -1,4 +1,4 @@
-// Blinko (forest version: Hazel the squirrel and the nuts) — rules, numbers and question sets.
+// Blinko (Hazel the squirrel and the nuts; a Christmas look and an autumn-forest look) — rules, numbers, words and question sets.
 // The rules and numbers are the ones from the original prototype ("Foxino Drop"), kept as they were.
 
 export const CONFIG = {
@@ -60,6 +60,47 @@ export const PEGS = [
   { kind: 'vanish', label: 'Dewdrop', pts: 15, note: 'pops' },
   { kind: 'spike', label: 'Thistle', pts: -40 },
 ];
+
+/* the season. index.html sets window.BLINKO_THEME before the game loads: 'xmas' (Christmas, the default now) or 'forest' (autumn, ?theme=forest).
+   The rules never change with it, only the pictures (art/xmas/ over art/) and these words. */
+export const THEME = (typeof window !== 'undefined' && window.BLINKO_THEME) === 'xmas' ? 'xmas' : 'forest';
+const XMAS_POWERS = {
+  dynamite: { name: 'Pinecone Pop', blurb: 'A snowy pinecone: it wakes up on the first peg, then POP! A shower of seeds clears the pegs around it.' },
+  yoyo: { name: 'Yo-Yo Nut', blurb: 'Falls twice: pulled back up on its candy-cane string, then dropped again.' },
+  bouncy: { name: 'Bouncy Peanut', blurb: 'A super-springy peanut in a Santa hat that bounces much higher.' },
+  egg: { name: 'Robin’s Egg', blurb: 'Cracks on a bump into a bouncy chick and two shell pieces.' },
+  turtle: { name: 'Hedgehog', blurb: 'Rolls up in a ball in its warm scarf. Every peg it hits tickles the other teams.' },
+  cow: { name: 'Snow Globe', blurb: 'Snow splashes out on every bump and hits extra pegs.' },
+  balloon: { name: 'Little Cloud', blurb: 'A floaty snow cloud that drifts and bobs, with a trail of snowflakes.' },
+  puffer: { name: 'Snowball', blurb: 'A snowball that grows bigger as it falls and hits several pegs at once.' },
+  oinky: { name: 'Nut Bank', blurb: 'A piggy money box in a Santa hat that drops a golden acorn on every bump.' },
+  shark: { name: 'Twinkle Light', blurb: 'A glowing Christmas light that zaps nearby pegs with little beams of light.' },
+  yinyang: { name: 'Jingle Bells', blurb: 'Two jingle bells at once, from mirrored spots.' },
+  popcorn: { name: 'Popcorn Ball', blurb: 'Pops into 5 bouncing pieces of popcorn.', scoring: 'Every piece scores pegs; pieces pay 30% of a basket.' },
+  bowling: { name: 'Mighty Walnut', blurb: 'A big, heavy nutcracker walnut that rolls straight through the pegs.' },
+  zombie: { name: 'Robins', blurb: 'A mummy robin: up to 4 baby robins join in as it hits pegs.' },
+  shield: { name: 'Woolly Hat', blurb: 'Keeps your nut safe from the next prickly holly.', scoring: 'Lasts until it blocks a holly.' },
+  boost: { name: 'Snowy Owl', blurb: 'Answer a bonus question to double the basket.' },
+};
+const XMAS_PEGS = { normal: 'Bauble', mint: 'Mint', gold: 'Gold', vanish: 'Snowflake', spike: 'Holly' };
+if (THEME === 'xmas') {
+  POWERS.forEach((p) => Object.assign(p, XMAS_POWERS[p.id] || {}));
+  PEGS.forEach((p) => { p.label = XMAS_PEGS[p.kind] || p.label; });
+}
+// the words that change with the season
+export const WORDS = THEME === 'xmas' ? {
+  spikes: 'Holly', bumper: 'Little reindeer', helmet: 'Woolly hat!', helmetBlocked: 'The woolly hat blocked the holly', helmetReady: '🧶 Hat ready', baby: 'Baby robin!', owl: 'Snowy Owl',
+  aimHint: 'Tap a number at the top of the board. Gold baubles pay 50, prickly holly takes 40 away!',
+  practice: 'Pegs give points, prickly holly takes points away. Each basket has a wooden gate: the first bump opens it.',
+  howto3: 'Pick one of 10 spots at the top. Baubles, mints and gold baubles give points, prickly holly takes points away. Each basket has a wooden gate: the first bump opens it, then an acorn can land inside.',
+  yay: ['Yay!', 'Hooray!', 'Ho ho ho!', 'Super!', 'Brilliant!', 'Merry well done!'], aww: ['Nice try!', 'Almost!', 'Next time!'],
+} : {
+  spikes: 'Thistles', bumper: 'Busy bee', helmet: 'Helmet!', helmetBlocked: 'The helmet blocked a thistle', helmetReady: '🌰 Helmet ready', baby: 'Baby ladybug!', owl: 'Wise Owl',
+  aimHint: 'Tap a number at the top of the board. Golden acorns pay 50, thistles take 40 away!',
+  practice: 'Pegs give points, thistles take points away. Each basket has a wooden gate: the first bump opens it.',
+  howto3: 'Pick one of 10 spots at the top. Berries, clovers and golden acorns give points, thistles take points away. Each basket has a wooden gate: the first bump opens it, then an acorn can land inside.',
+  yay: ['Yay!', 'Hooray!', 'Well done!', 'Super!', 'Brilliant!'], aww: ['Nice try!', 'Almost!', 'Next time!'],
+};
 
 // question sets (from the prototype). `pic` is the painted picture (art/<pic>.webp); `image` is the symbol shown if the picture is missing
 export const SETS = [

@@ -1,0 +1,3 @@
+/* written by Foxino/Blinko/Art/xmas/build_xmas.py — the Christmas START and DROP buttons */
+html[data-theme="xmas"] .btn-pic.start { aspect-ratio: 945 / 300; background-image: url(btn-start.webp?v=1); }
+html[data-theme="xmas"] .btn-pic.drop { aspect-ratio: 932 / 300; background-image: url(btn-drop.webp?v=1); }

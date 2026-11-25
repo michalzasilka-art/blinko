@@ -4,29 +4,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Blinko · fugio</title>
-<meta name="description" content="Blinko: answer, power up, drop the nut! A cosy forest quiz game with Hazel the squirrel, for the classroom whiteboard and for families.">
+<meta name="description" content="Blinko: answer, power up, drop the nut! A cosy Christmas quiz game with Hazel the squirrel, for the classroom whiteboard and for families.">
 <meta property="og:title" content="Blinko">
-<meta property="og:description" content="Answer, power up, drop the nut! A cosy forest quiz game with Hazel the squirrel.">
-<meta property="og:image" content="https://www.fugio.co/img/library/blinko-thumb.webp?v=3">
+<meta property="og:description" content="Answer, power up, drop the nut! A cosy Christmas quiz game with Hazel the squirrel.">
+<meta property="og:image" content="https://www.fugio.co/img/library/blinko-thumb.webp?v=4">
 <link rel="icon" href="/favicon.ico">
+<script>
+  // the season: Christmas now; ?theme=forest shows the autumn forest (the rules are the same)
+  window.BLINKO_THEME = new URLSearchParams(location.search).get('theme') === 'forest' ? 'forest' : 'xmas';
+  document.documentElement.dataset.theme = window.BLINKO_THEME;
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="blinko.css?v=3">
 <link rel="stylesheet" href="art/ui.css?v=3">
-<link rel="stylesheet" href="forest.css?v=1">
+<link rel="stylesheet" href="forest.css?v=2">
+<link rel="stylesheet" href="art/xmas/ui.css?v=1">
+<link rel="stylesheet" href="xmas.css?v=1">
 </head>
 <body>
 <div id="stage">
   <div id="scene"></div>
+  <canvas id="snow" aria-hidden="true"></canvas>
   <canvas id="confetti"></canvas>
 
   <!-- 1. setup -->
   <section class="screen" id="scr-setup">
     <header class="hero">
-      <img class="hz-side left" src="art/squirrel-hold.webp?v=3" alt="" onerror="this.remove()">
-      <img class="logo-img" src="art/logo.webp?v=3" alt="Blinko" onload="document.body.classList.add('painted-logo')">
-      <img class="hz-side right" src="art/pu-turtle.webp?v=3" alt="" onerror="this.remove()">
+      <img class="hz-side left" data-art="squirrel-hold" alt="" onerror="this.remove()">
+      <img class="logo-img" data-art="logo" alt="Blinko" onload="document.body.classList.add('painted-logo')">
+      <img class="hz-side right" data-art="pu-turtle" alt="" onerror="this.remove()">
       <div class="logo" aria-label="Blinko"><span>B</span><span>L</span><span>I</span><span>N</span><span>K</span><span class="o"></span></div>
       <p class="tagline">Answer · Power up · Drop the nut!</p>
     </header>
@@ -54,7 +62,7 @@
   <!-- 3. game -->
   <section class="screen" id="scr-game">
     <div class="topbar">
-      <img class="mini-img" src="art/logo.webp?v=3" alt="Blinko">
+      <img class="mini-img" data-art="logo" alt="Blinko">
       <div class="mini-logo">BLINK<span class="o"></span></div>
       <div class="chip" id="roundChip">Round 1 of 4</div>
       <div class="chip mode" id="modeChip"></div>
@@ -94,8 +102,8 @@
   <div class="overlay" id="pauseOv"><div class="glass modal"><h2 class="title">Paused</h2><button class="btn gold xl" data-act="resume">Resume <i>▶</i></button><button class="btn ghost lg" data-act="home">Back to setup</button></div></div>
   <div class="overlay" id="homeOv"><div class="glass modal"><h2 class="title sm">Leave this game?</h2><p class="mp">The scores of this game will be lost.</p><div class="row"><button class="btn ghost lg" data-act="stay">Keep playing</button><button class="btn bad lg" data-act="leave">Leave</button></div></div></div>
   <div class="toast" id="toast"></div>
-  <div id="loader"><div class="ld-ball"><img src="art/nut-wheee.webp?v=3" alt="" onerror="this.remove()"></div><div class="ld-t">Loading…</div><div class="ld-bar"><i id="loadBar"></i></div><div class="ld-tip">The first time can take a moment.</div></div>
+  <div id="loader"><div class="ld-ball"><img data-art="nut-wheee" alt="" onerror="this.remove()"></div><div class="ld-t">Loading…</div><div class="ld-bar"><i id="loadBar"></i></div><div class="ld-tip">The first time can take a moment.</div></div>
 </div>
-<script type="module" src="game.js?v=3"></script>
+<script type="module" src="game.js?v=4"></script>
 </body>
 </html>
