@@ -27,7 +27,8 @@ export const CREW = [
   { id: 'penguin', name: 'Penguin' }, { id: 'bear', name: 'Polar Bear' }, { id: 'otter', name: 'Otter' },
   { id: 'seal', name: 'Seal' }, { id: 'turtle', name: 'Turtle' }, { id: 'axolotl', name: 'Axolotl' },
 ];
-export const crewURL = (id) => `art/crew-${id}.webp?v=1`;
+// the team portraits: Christmas versions (Santa hats, antlers, scarves…) in the Christmas look, the originals in the autumn forest
+export const crewURL = (id) => (THEME === 'xmas' ? `art/xmas/crew-${id}.webp?v=1` : `art/crew-${id}.webp?v=1`);
 
 export const TEAM_COLORS = ['#ff973b', '#33d1a6', '#ff5e8a', '#4f8bff', '#ffc93d', '#b28bff', '#5fcf5a', '#ff4d5e'];
 export const TEAM_NAMES = ['Fox Squad', 'Star Crew', 'Robot Brains', 'Rocket Pix', 'Acorn Gang', 'Owl Pals', 'Leaf Team', 'Berry Bunch'];
