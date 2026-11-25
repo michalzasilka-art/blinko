@@ -21,13 +21,15 @@
 <link rel="stylesheet" href="art/ui.css?v=3">
 <link rel="stylesheet" href="forest.css?v=2">
 <link rel="stylesheet" href="art/xmas/ui.css?v=2">
-<link rel="stylesheet" href="xmas.css?v=3">
+<link rel="stylesheet" href="xmas.css?v=4">
 </head>
 <body>
 <div id="stage">
   <div id="scene"></div>
   <canvas id="snow" aria-hidden="true"></canvas>
   <canvas id="confetti"></canvas>
+  <canvas id="frost" aria-hidden="true"></canvas>
+  <div class="congrats" id="congrats" aria-live="polite"><div class="word"><span class="out" aria-hidden="true">Congratulations!</span><span class="fill">Congratulations!</span></div><span class="who"></span></div>
 
   <!-- 1. setup -->
   <section class="screen" id="scr-setup">
@@ -104,6 +106,6 @@
   <div class="toast" id="toast"></div>
   <div id="loader"><div class="ld-ball"><img data-art="nut-wheee" alt="" onerror="this.remove()"></div><div class="ld-t">Loading…</div><div class="ld-bar"><i id="loadBar"></i></div><div class="ld-tip">The first time can take a moment.</div></div>
 </div>
-<script type="module" src="game.js?v=8"></script>
+<script type="module" src="game.js?v=9"></script>
 </body>
 </html>

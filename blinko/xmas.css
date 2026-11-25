@@ -28,3 +28,17 @@ html[data-theme="xmas"] .hz-side.right { height: 200px; top: 40px; }
 .deco-candies { left: 852px; top: 28px; height: 92px; }
 @media (prefers-reduced-motion: no-preference) { .deco-cane, .deco-lollipop { animation: decoSway 5s ease-in-out infinite; } .deco-lollipop { animation-delay: -2.5s; } }
 @keyframes decoSway { 50% { rotate: 3deg; } }
+
+/* ---- the right-answer moment at Christmas (2026-11-25): frost grows in from the edges (frost.js), snow, "Congratulations!" ---- */
+#frost { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; z-index: 46; display: none; }
+#frost.on { display: block; }
+.congrats { position: absolute; left: 0; right: 0; top: 330px; z-index: 45; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 34px; opacity: 0; }
+.congrats .word { position: relative; font-family: "Lilita One", sans-serif; font-size: 150px; line-height: 1.1; letter-spacing: 2px; white-space: nowrap; }
+.congrats .word span { display: block; padding: 0 20px; }
+.congrats .out { position: absolute; inset: 0; color: #1d4a9e; -webkit-text-stroke: 24px #1d4a9e; text-shadow: 0 14px 0 #11306c, 0 0 70px rgba(170, 225, 255, .95); }
+.congrats .fill { position: relative; background: linear-gradient(180deg, #ffffff 8%, #eef9ff 48%, #a6dbff 92%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: #fff; }
+.congrats .who { max-width: 1150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 12px 40px 14px; border-radius: 999px; background: rgba(18, 40, 92, .82); border: 6px solid var(--c, #5fb2ff); font-family: Nunito, sans-serif; font-weight: 900; font-size: 50px; line-height: 1.1; color: #fff; box-shadow: 0 10px 0 rgba(8, 20, 50, .35), 0 0 40px rgba(170, 225, 255, .5); }
+.congrats.on { animation: congrats 3.3s ease-out both; }
+@keyframes congrats { 0% { opacity: 0; transform: scale(.94); filter: blur(14px); } 13% { opacity: 1; transform: scale(1); filter: blur(0); } 84% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(1.02); filter: blur(6px); } }
+@media (prefers-reduced-motion: reduce) { .congrats.on { animation: congratsFade 3.3s linear both !important; } }
+@keyframes congratsFade { 0%, 100% { opacity: 0; } 8%, 88% { opacity: 1; } }

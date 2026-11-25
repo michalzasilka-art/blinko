@@ -4,6 +4,7 @@ import { CONFIG, SETS, POWERS, PEGS, CREW, TEAM_COLORS, TEAM_NAMES, TEAM_CREW, c
 import { makeBoard, Drop, shuffle } from './engine.js';
 import { BoardView, powerIcon, pegIcon, ballKind, loadArt, artList, artURL, META, COOKIE, cookieURL } from './art.js';
 import { sfx, unlock, setMuted, isMuted } from './sound.js';
+import { prepareFrost, freeze, unfreeze } from './frost.js?v=1';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -134,7 +135,9 @@ const scoreMood = (v) => (v >= 150 ? 'love' : v >= 60 ? 'cheer' : v > 0 ? 'happy
 
 /* Hazel and the acorn show how they feel about an answer: a short moment over the board while the game carries on */
 let feelT = 0;
-function feel(right, t) {
+function feel(right, t, rightTeams) {
+  if (right && FROST) return congrats(rightTeams || [t]);
+  if (FROST) unfreeze($('#congrats'));
   const el = $('#feel'); if (!el) return;
   el.style.setProperty('--c', t ? t.color : '#ffb43a');
   el.className = 'feel ' + (right ? 'yay' : 'aww');
@@ -144,6 +147,16 @@ function feel(right, t) {
   if (right && THEME === 'xmas') sfx('jingle');
   if (right && !reduced) leafBurst(960, 560, 70);
   clearTimeout(feelT); feelT = setTimeout(() => el.classList.remove('on'), right ? 2000 : 1800);
+}
+/* at Christmas a right answer freezes the edges of the screen, snow falls and "Congratulations!" (frost.js); nothing else moves */
+const FROST = THEME === 'xmas';
+function congrats(list) {
+  list = list.filter(Boolean);
+  const el = $('#congrats'), who = el.querySelector('.who'), n = list.length;
+  who.textContent = n === 1 ? `${list[0].name} got it right!` : n === 2 ? `${list[0].name} and ${list[1].name} got it right!` : `${n} teams got it right!`;
+  who.hidden = !n; el.style.setProperty('--c', n === 1 ? list[0].color : '#5fb2ff');
+  const f = $('#feel'); if (f) f.classList.remove('on');
+  sfx('jingle'); freeze({ text: el, reduced });
 }
 const set = () => SETS.find((s) => s.id === settings.setId) || SETS[0];
 const snap = () => { const { undo, ...rest } = g; return JSON.parse(JSON.stringify(rest)); };
@@ -194,7 +207,7 @@ function judgeAll() {
   g.undo = snap(); g.revealed = true;
   g.teams.forEach((t, i) => record(i, g.marks[t.id]));
   g.classRight = { ...g.marks }; g.turn = 0; g.classDrop = true;
-  sfx('start'); const any = g.teams.some((x) => g.marks[x.id]); feel(any, any ? g.teams.find((x) => g.marks[x.id]) : team()); offerOrAim(!!g.classRight[team().id]); render();
+  sfx('start'); const any = g.teams.some((x) => g.marks[x.id]); feel(any, any ? g.teams.find((x) => g.marks[x.id]) : team(), g.teams.filter((x) => g.marks[x.id])); offerOrAim(!!g.classRight[team().id]); render();
 }
 function pickPower(id) {
   if (g.phase !== 'powerup') return;
@@ -571,6 +584,7 @@ window.BL = {
   aim(slot = 4) { g.slot = slot; render(); }, release, judge, pickPower, next,
   fast(n = 6) { window.__fast = n; },
   stars(n = 3) { team().stars = n; render(); },
+  feel: (right = true) => feel(right, team()),
 };
 
 // ?demo=<state> opens the game straight in one state (for checking the design at full size)
@@ -608,6 +622,7 @@ function runDemo(d) {
   const all = Promise.all([loadArt(tick), fonts, ...pics.map(img)]);
   Promise.race([all, new Promise((r) => setTimeout(r, 12000))]).then(() => {
     show('setup');
+    if (FROST) prepareFrost('art/xmas/frost.webp?v=1', $('#frost'));
     const demo = new URLSearchParams(location.search).get('demo'); if (demo) { document.body.classList.add('noanim'); runDemo(demo); }
     const l = $('#loader'); if (l) { l.classList.add('gone'); setTimeout(() => l.remove(), 700); }
   });
