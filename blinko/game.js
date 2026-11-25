@@ -3,7 +3,7 @@
 import { CONFIG, SETS, POWERS, PEGS, CREW, TEAM_COLORS, TEAM_NAMES, TEAM_CREW, crewURL, powerById } from './data.js';
 import { makeBoard, Drop, shuffle } from './engine.js';
 import { BoardView, powerIcon, pegIcon, ballKind, loadArt, artList, artURL } from './art.js';
-import { META } from './art/meta.js?v=2';
+import { META } from './art/meta.js?v=3';
 import { sfx, unlock, setMuted, isMuted } from './sound.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -52,7 +52,7 @@ function renderSetup() {
     <div class="field"><label>Time to answer</label>${seg('timeLimit', [[0, 'Off'], [20, '20 s'], [30, '30 s'], [60, '60 s']], settings.timeLimit)}</div>
     <div class="field"><label>Mode</label>${seg('mode', [['turn', 'Team turns'], ['class', 'Everyone answers']], settings.mode, 'text')}</div>
     <div class="field wide"><label>Board extras</label><div class="toggles">
-      ${tog('spikes', 'Spike pegs')}${tog('springGates', 'Spring gates')}${tog('movingBumper', 'Moving bumper')}
+      ${tog('spikes', 'Thistles')}${tog('springGates', 'Spring gates')}${tog('movingBumper', 'Busy bee')}
       ${tog('repeat', 'Repeat questions')}${tog('lowScore', 'Small numbers')}
     </div></div>`;
   $('#powerGrid').innerHTML = POWERS.map((p) => `<button class="pw ${settings.powers[p.id] ? '' : 'off'} ${p.extra ? 'extra' : ''}" data-pw="${p.id}" title="${esc(p.blurb)}"><img src="${powerIcon(p.id, 168)}" alt=""><span>${esc(p.name)}</span></button>`).join('');
@@ -106,6 +106,27 @@ fit();
 const enabledPowers = () => POWERS.filter((p) => settings.powers[p.id]).map((p) => p.id);
 const team = () => g.teams[g.turn];
 const teamImg = (t) => crewURL(t.crew);
+// Hazel the squirrel and the team's acorn (painted faces, art/squirrel-<pose>.webp and art/nut-<mood>.webp)
+const hazel = (pose) => artURL('squirrel-' + pose);
+const nutPic = (mood) => artURL('nut-' + mood);
+const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
+// the acorn in a ring of the team's colour, for the panels
+const nutBall = (t, mood = 'happy', cls = 'ball nut') => `<span class="${cls}" style="--c:${t.color}"><img src="${nutPic(mood)}" alt=""></span>`;
+// how a turn's score feels
+const scoreMood = (v) => (v >= 150 ? 'love' : v >= 60 ? 'cheer' : v > 0 ? 'happy' : 'sad');
+
+/* Hazel and the acorn show how they feel about an answer: a short moment over the board while the game carries on */
+let feelT = 0;
+function feel(right, t) {
+  const el = $('#feel'); if (!el) return;
+  el.style.setProperty('--c', t ? t.color : '#ffb43a');
+  el.className = 'feel ' + (right ? 'yay' : 'aww');
+  el.innerHTML = `<div class="say">${right ? pickOne(['Yay!', 'Hooray!', 'Well done!', 'Super!', 'Brilliant!']) : pickOne(['Nice try!', 'Almost!', 'Next time!'])}</div>
+    <img class="hz" src="${hazel(right ? 'cheer' : 'oops')}" alt=""><span class="nutpop">${nutBall(t || { color: '#ffb43a' }, right ? 'cheer' : 'sad', 'ball nut big')}</span>`;
+  void el.offsetWidth; el.classList.add('on');
+  if (right && !reduced) leafBurst(960, 560, 70);
+  clearTimeout(feelT); feelT = setTimeout(() => el.classList.remove('on'), right ? 2000 : 1800);
+}
 const set = () => SETS.find((s) => s.id === settings.setId) || SETS[0];
 const snap = () => { const { undo, ...rest } = g; return JSON.parse(JSON.stringify(rest)); };
 
@@ -146,7 +167,7 @@ function offerOrAim(eligible = true) {
 function judge(correct) {
   if (g.phase !== 'question') return;
   g.undo = snap(); record(g.turn, correct); g.revealed = true;
-  sfx(correct ? 'right' : 'wrong');
+  sfx(correct ? 'right' : 'wrong'); feel(correct, team());
   if (correct) offerOrAim(true); else g.phase = 'explain';
   render();
 }
@@ -155,7 +176,7 @@ function judgeAll() {
   g.undo = snap(); g.revealed = true;
   g.teams.forEach((t, i) => record(i, g.marks[t.id]));
   g.classRight = { ...g.marks }; g.turn = 0; g.classDrop = true;
-  sfx('start'); offerOrAim(!!g.classRight[team().id]); render();
+  sfx('start'); const any = g.teams.some((x) => g.marks[x.id]); feel(any, any ? g.teams.find((x) => g.marks[x.id]) : team()); offerOrAim(!!g.classRight[team().id]); render();
 }
 function pickPower(id) {
   if (g.phase !== 'powerup') return;
@@ -170,7 +191,7 @@ function pickPower(id) {
 function judgeBoost(correct) {
   if (g.phase !== 'boost') return;
   record(g.turn, correct, true); g.pocketMul = correct ? CONFIG.scoring.boostMultiplier : 1; g.revealed = true;
-  sfx(correct ? 'right' : 'wrong'); toast(correct ? 'Pocket × 2!' : 'No boost this time');
+  sfx(correct ? 'right' : 'wrong'); feel(correct, team()); toast(correct ? 'Basket × 2!' : 'No boost this time');
   toAim(); render();
 }
 function release() {
@@ -249,33 +270,33 @@ function panelHTML() {
       const n = g.offer.length;
       return turnHead(t, 'Power-up time!') + `<div class="big-msg"><h2>Pick ONE!</h2><p>Your ${'★'.repeat(n)} revealed ${n} card${n > 1 ? 's' : ''}.</p></div>
         <div class="cards">${g.offer.map((id) => { const p = powerById(id); return `<button class="pcard" data-pick="${id}" style="--a:${p.c[0]};--b:${p.c[1]}"><img src="${powerIcon(id, 200)}" alt=""><span><b>${esc(p.name)}</b><p>${esc(p.blurb)}</p><em>${esc(p.scoring)}</em></span></button>`; }).join('')}</div>
-        <div class="actions"><button class="btn ghost lg block" data-act="skipPower">Skip — normal ball</button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
+        <div class="actions"><button class="btn ghost lg block" data-act="skipPower">Skip — my acorn</button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
     }
     case 'boost':
-      if (!g.revealed) return turnHead(t, 'Knowledge Boost') + questionCard(q, 'Bonus question · right = pocket × 2') + `<div class="actions">${clueBtn(q)}<button class="btn gold xl block" data-act="reveal">Show answer</button></div>`;
-      return turnHead(t, 'Knowledge Boost') + questionCard(q, 'Bonus question') + `<div class="actions judge"><button class="btn good xl block" data-act="boostYes"><span class="mk">✓ </span>Right</button><button class="btn bad xl block" data-act="boostNo"><span class="mk">✗ </span>Wrong</button></div>`;
+      if (!g.revealed) return turnHead(t, 'Wise Owl') + questionCard(q, 'Bonus question · right = basket × 2') + `<div class="actions">${clueBtn(q)}<button class="btn gold xl block" data-act="reveal">Show answer</button></div>`;
+      return turnHead(t, 'Wise Owl') + questionCard(q, 'Bonus question') + `<div class="actions judge"><button class="btn good xl block" data-act="boostYes"><span class="mk">✓ </span>Right</button><button class="btn bad xl block" data-act="boostNo"><span class="mk">✗ </span>Wrong</button></div>`;
     case 'aim': {
       const p = g.power ? powerById(g.power) : null;
-      const pic = p && !['shield', 'boost'].includes(p.id) ? `<img class="ball" src="${powerIcon(p.id, 260)}" alt="">` : `<span class="ball" style="--c:${t.color};background-image:url(${teamImg(t)})"></span>`;
-      const extras = [g.pocketMul > 1 ? '<span class="badge">🧠 Pocket × 2</span>' : '', t.shield ? '<span class="badge">🛡 Shield ready</span>' : ''].join(' ');
-      return turnHead(t, 'Drop the ball!') + `<div class="ballbox">${pic}<h3>${p && !['shield', 'boost'].includes(p.id) ? esc(p.name) : 'Your ball'}</h3><p>${p && !['shield', 'boost'].includes(p.id) ? esc(p.blurb) : 'Tap a number at the top of the board. Gold pegs pay 50, spikes take 40 away!'}</p><div>${extras}</div></div>
+      const pic = p && !['shield', 'boost'].includes(p.id) ? `<img class="ball" src="${powerIcon(p.id, 260)}" alt="">` : nutBall(t, 'happy');
+      const extras = [g.pocketMul > 1 ? '<span class="badge">🦉 Basket × 2</span>' : '', t.shield ? '<span class="badge">🌰 Helmet ready</span>' : ''].join(' ');
+      return turnHead(t, 'Drop the nut!') + `<div class="ballbox">${pic}<h3>${p && !['shield', 'boost'].includes(p.id) ? esc(p.name) : 'Your acorn'}</h3><p>${p && !['shield', 'boost'].includes(p.id) ? esc(p.blurb) : 'Tap a number at the top of the board. Golden acorns pay 50, thistles take 40 away!'}</p><div>${extras}</div></div>
         <div class="actions"><div class="hint ${g.slot >= 0 ? 'go' : ''}">${g.slot >= 0 ? `Spot ${g.slot + 1} — ready!` : 'Tap a number at the top of the board'}</div><button class="btn-pic drop ${g.slot >= 0 ? 'pulse' : ''}" data-act="drop" aria-label="Drop" ${g.slot >= 0 ? '' : 'disabled'}><span>DROP!</span></button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
     }
     case 'drop':
       return turnHead(t, 'Dropping…') + (g.power && !['shield', 'boost'].includes(g.power) ? `<div class="inplay"><img src="${powerIcon(g.power, 200)}" alt=""><b>${esc(powerById(g.power).name)}</b></div>` : '') + `<div class="live"><small>Turn score</small><div class="num" id="liveNum">0</div><div class="breakdown" id="liveBd"></div></div>`;
     case 'result': {
-      const r = g.lastResult, rows = [['Pegs', r.pegScore], ['Pocket', r.pocketScore]];
-      if (r.coinScore) rows.push(['Coins', r.coinScore]);
-      if (r.attack) rows.push(['Rivals lose', -r.attack]);
-      return turnHead(t, 'Turn score') + `<div class="live"><div class="num ${r.score < 0 ? 'neg' : ''}">${r.score > 0 ? '+' : ''}${r.score}</div>
+      const r = g.lastResult, rows = [['Pegs', r.pegScore], ['Basket', r.pocketScore]];
+      if (r.coinScore) rows.push(['Golden acorns', r.coinScore]);
+      if (r.attack) rows.push(['Other teams lose', -r.attack]);
+      return turnHead(t, 'Turn score') + `<div class="live">${nutBall(t, scoreMood(r.score), 'ball nut mood')}<div class="num ${r.score < 0 ? 'neg' : ''}">${r.score > 0 ? '+' : ''}${r.score}</div>
         <div class="breakdown">${rows.map(([l, v], i) => `<div class="${v < 0 ? 'neg' : 'pos'}" style="animation-delay:${i * 0.1}s"><span>${l}</span><b>${v > 0 ? '+' : ''}${v}</b></div>`).join('')}
         ${r.stars ? `<div class="pos" style="animation-delay:.4s"><span>Stars for next time</span><b style="color:#ffe14d">${'★'.repeat(r.stars)}</b></div>` : ''}
-        ${r.shieldUsed ? '<div class="pos"><span>Shield blocked a spike</span><b>🛡</b></div>' : ''}</div></div>
+        ${r.shieldUsed ? '<div class="pos"><span>The helmet blocked a thistle</span><b>🌰</b></div>' : ''}</div></div>
         <div class="actions"><button class="btn gold xl block pulse" data-act="next">${nextLabel()} →</button></div>`;
     }
     case 'practice':
-      return `<div class="big-msg" style="margin-top:20px"><h2>Practice drop</h2><p>Tap a number at the top of the board to drop a ball. Try it a few times — it does not count!</p></div>
-        <div class="ballbox"><span class="ball" style="--c:${g.teams[0].color};background-image:url(${teamImg(g.teams[0])})"></span><p>Pegs give points, spikes take points away. Each pocket has a gold gate: the first bump opens it.</p></div>
+      return `<div class="big-msg" style="margin-top:20px"><h2>Practice drop</h2><p>Tap a number at the top of the board to drop an acorn. Try it a few times — it does not count!</p></div>
+        <div class="ballbox">${nutBall(g.teams[0], 'wheee')}<p>Pegs give points, thistles take points away. Each basket has a wooden gate: the first bump opens it.</p></div>
         <div class="actions"><button class="btn-pic start pulse" data-act="endPractice" aria-label="Start"><span>START</span></button></div>`;
   }
   return '';
@@ -319,7 +340,7 @@ function paintScore(i, v, dir) {
   if (dir) { el.classList.remove('up', 'down'); void el.offsetWidth; el.classList.add(dir > 0 ? 'up' : 'down'); }
 }
 function renderLegend() {
-  $('#legend').innerHTML = PEGS.map((p) => `<div><img src="${pegIcon(p.kind, 108)}" alt=""><b class="${p.pts < 0 ? 'neg' : ''}">${p.pts > 0 ? '+' : ''}${p.pts}</b>${p.label}</div>`).join('') + '<div class="note">★ in a pocket = a power-up card later</div>';
+  $('#legend').innerHTML = PEGS.map((p) => `<div><img src="${pegIcon(p.kind, 108)}" alt=""><b class="${p.pts < 0 ? 'neg' : ''}">${p.pts > 0 ? '+' : ''}${p.pts}</b>${p.label}</div>`).join('') + '<div class="note">★ in a basket = a power-up card later</div>';
 }
 
 /* ------------------------------------------------------------ the frame loop */
@@ -439,8 +460,8 @@ function openHowto(starting) {
   const ic = (ids) => ids.map((id) => `<img src="${powerIcon(id, 172)}" alt="">`).join('');
   $('#howto').innerHTML = `<div class="glass howto"><h2 class="title">How to play</h2><div class="steps">
     <div class="step"><span class="n">1</span><h3>Answer the question</h3><div class="pics">${META.sprites['q-mark'] ? `<img src="${artURL('q-mark')}" alt="">` : '<span style="font-size:80px">?</span>'}</div><p>The team answers. The teacher shows the answer and taps <b>Right</b> or <b>Wrong</b>. ${settings.mode === 'class' ? 'In “Everyone answers” mode every team writes an answer, then every team drops.' : ''}</p></div>
-    <div class="step"><span class="n">2</span><h3>Collect stars, pick a power-up</h3><div class="pics">${ic(['dynamite', 'balloon', 'popcorn'])}</div><p>Land in pockets with ★ to collect stars. On your next right answer each star turns over one power-up card (up to 3) — pick ONE or skip it.</p></div>
-    <div class="step"><span class="n">3</span><h3>Drop the ball</h3><div class="pics"><img src="${pegIcon('gold', 120)}" alt=""><img src="${pegIcon('mint', 120)}" alt=""><img src="${pegIcon('spike', 120)}" alt=""></div><p>Pick one of 10 spots at the top. Pegs give points, spikes take points away. Each pocket has a gold gate: the first bump opens it, then a ball can land inside.</p></div>
+    <div class="step"><span class="n">2</span><h3>Collect stars, pick a power-up</h3><div class="pics">${ic(['dynamite', 'balloon', 'popcorn'])}</div><p>Land in baskets with ★ to collect stars. On your next right answer each star turns over one power-up card (up to 3) — pick ONE or skip it.</p></div>
+    <div class="step"><span class="n">3</span><h3>Drop the acorn</h3><div class="pics"><img src="${pegIcon('gold', 120)}" alt=""><img src="${pegIcon('mint', 120)}" alt=""><img src="${pegIcon('spike', 120)}" alt=""></div><p>Pick one of 10 spots at the top. Berries, clovers and golden acorns give points, thistles take points away. Each basket has a wooden gate: the first bump opens it, then an acorn can land inside.</p></div>
   </div><div class="row">${starting ? '<button class="btn ghost lg" data-act="skipHowto">Skip — start now</button><button class="btn gold xl pulse" data-act="practice">Practice drop ▶</button>' : '<button class="btn gold xl" data-act="closeHowto">Got it!</button>'}</div></div>`;
   $('#howto').classList.add('on');
 }
@@ -458,6 +479,7 @@ function showFinal() {
     const P = META.podium, order = [sorted[1], sorted[0], sorted[2]], xs = [1 / 6, 1 / 2, 5 / 6];
     $('#podium').innerHTML = `<div class="podium-pic" style="aspect-ratio:${P.w}/${P.h}"><img class="pod-img" src="${artURL('podium')}" alt="">` + order.map((t, k) => t ? `<div class="pp p${[2, 1, 3][k]}" style="left:${xs[k] * 100}%;bottom:${(1 - P.tops[k] / P.h) * 100}%;--c:${t.color}"><b>${esc(t.name)}</b><span class="ps">${t.score}</span><span class="pic" style="background-image:url(${teamImg(t)})">${k === 1 && !tie && META.sprites.crown ? `<img class="crown" src="${artURL('crown')}" alt="">` : ''}</span></div>` : '').join('') + '</div>';
   } else $('#podium').innerHTML = pod;
+  $('#podium').insertAdjacentHTML('beforeend', `<img class="hz-pod" src="${hazel('cheer')}" alt="">`);
   $('#finScores').innerHTML = sorted.map((t, i) => `<div class="frow" style="--c:${t.color}"><span class="pic" style="background-image:url(${teamImg(t)})"></span><b>${i + 1}. ${esc(t.name)}<span class="xp">${t.correct}/${t.answered} right · ${t.xp} XP</span></b><span class="sc">${t.score}</span></div>`).join('');
   const total = g.answers.length, right = g.answers.filter((a) => a.correct).length;
   const wrong = [], seen = new Set(); g.answers.filter((a) => !a.correct).forEach((a) => { if (!seen.has(a.qid)) { seen.add(a.qid); wrong.push(a); } });
@@ -473,11 +495,16 @@ const cc = $('#confetti'), cx = cc.getContext('2d'); cc.width = 1920; cc.height 
 let bits = [], confettiOn = false;
 function confettiStart() { confettiOn = true; }
 function confettiStop() { confettiOn = false; bits = []; cx.clearRect(0, 0, 1920, 1080); }
+// a burst of autumn leaves and gold from one point (a right answer)
+function leafBurst(x, y, n) {
+  const cols = ['#ff9f1c', '#ffcf2e', '#e8572a', '#7cc255', '#c0702a', '#ffe08a'];
+  for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = 380 + Math.random() * 620; bits.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 420, g: 900, r: Math.random() * 6, vr: (Math.random() - 0.5) * 14, w: 12 + Math.random() * 12, h: 8 + Math.random() * 8, c: cols[i % cols.length] }); }
+}
 function confettiStep(dt) {
   if (!confettiOn && !bits.length) return;
   if (confettiOn && bits.length < 260) for (let i = 0; i < 4; i++) bits.push({ x: Math.random() * 1920, y: -20, vx: (Math.random() - 0.5) * 120, vy: 150 + Math.random() * 200, r: Math.random() * 6, vr: (Math.random() - 0.5) * 10, w: 10 + Math.random() * 10, h: 6 + Math.random() * 8, c: TEAM_COLORS[(Math.random() * 8) | 0] });
   cx.clearRect(0, 0, 1920, 1080);
-  for (const b of bits) { b.x += b.vx * dt + Math.sin(b.y / 40) * 1.2; b.y += b.vy * dt; b.r += b.vr * dt; cx.save(); cx.translate(b.x, b.y); cx.rotate(b.r); cx.scale(1, Math.cos(b.r * 2)); cx.fillStyle = b.c; cx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); cx.restore(); }
+  for (const b of bits) { b.vy += (b.g || 0) * dt; b.x += b.vx * dt + Math.sin(b.y / 40) * 1.2; b.y += b.vy * dt; b.r += b.vr * dt; cx.save(); cx.translate(b.x, b.y); cx.rotate(b.r); cx.scale(1, Math.cos(b.r * 2)); cx.fillStyle = b.c; cx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); cx.restore(); }
   bits = bits.filter((b) => b.y < 1120);
   if (screen !== 'final') confettiOn = false;
 }

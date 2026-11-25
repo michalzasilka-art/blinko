@@ -1,105 +1,105 @@
-// written by Foxino/Blinko/Art/build_art.py
+// written by Foxino/Blinko/Art/forest/build_forest.py (first written by ../build_art.py)
 export const META = {
  "sprites": {
   "pu-dynamite": {
-   "w": 242,
+   "w": 309,
    "h": 320
   },
   "pu-yoyo": {
-   "w": 241,
+   "w": 266,
    "h": 320
   },
   "pu-bouncy": {
-   "w": 317,
-   "h": 320
-  },
-  "pu-egg": {
    "w": 314,
    "h": 320
   },
+  "pu-egg": {
+   "w": 315,
+   "h": 320
+  },
   "pu-turtle": {
-   "w": 313,
+   "w": 315,
    "h": 320
   },
   "pu-cow": {
-   "w": 320,
-   "h": 306
+   "w": 293,
+   "h": 320
   },
   "pu-balloon": {
-   "w": 300,
+   "w": 317,
    "h": 320
   },
   "pu-puffer": {
-   "w": 320,
+   "w": 310,
    "h": 320
   },
   "pu-oinky": {
-   "w": 320,
-   "h": 299
-  },
-  "pu-shark": {
-   "w": 301,
-   "h": 320
-  },
-  "pu-yinyang": {
    "w": 319,
    "h": 320
   },
+  "pu-shark": {
+   "w": 320,
+   "h": 299
+  },
+  "pu-yinyang": {
+   "w": 268,
+   "h": 320
+  },
   "pu-popcorn": {
-   "w": 302,
+   "w": 315,
    "h": 320
   },
   "pu-bowling": {
-   "w": 320,
-   "h": 318
+   "w": 315,
+   "h": 320
   },
   "pu-zombie": {
-   "w": 312,
+   "w": 317,
    "h": 320
   },
   "pu-shield": {
-   "w": 320,
-   "h": 319
+   "w": 276,
+   "h": 320
   },
   "pu-boost": {
-   "w": 320,
-   "h": 319
+   "w": 317,
+   "h": 320
   },
   "peg-blue": {
-   "w": 110,
+   "w": 105,
    "h": 112
   },
   "peg-mint": {
-   "w": 110,
-   "h": 112
+   "w": 112,
+   "h": 111
   },
   "peg-gold": {
-   "w": 112,
+   "w": 95,
    "h": 112
   },
   "peg-bubble": {
-   "w": 111,
+   "w": 112,
    "h": 112
   },
   "peg-spike": {
-   "w": 128,
-   "h": 127
+   "w": 125,
+   "h": 128
   },
   "star": {
    "w": 160,
    "h": 155
   },
   "bumper-purple": {
-   "w": 143,
+   "w": 142,
    "h": 144
   },
   "bumper-orange": {
-   "w": 138,
+   "w": 144,
    "h": 144
   },
   "bumper-orb": {
    "w": 176,
-   "h": 135
+   "h": 168
   },
   "q-apple": {
    "w": 364,
@@ -134,7 +134,7 @@ export const META = {
    "h": 420
   },
   "coin": {
-   "w": 94,
+   "w": 95,
    "h": 96
   },
   "chick": {
@@ -147,70 +147,127 @@ export const META = {
   },
   "crown": {
    "w": 320,
-   "h": 261
+   "h": 231
   },
   "btn-round": {
-   "w": 198,
+   "w": 197,
    "h": 200
   },
   "logo": {
-   "w": 930,
+   "w": 1182,
    "h": 460
+  },
+  "nut-happy": {
+   "w": 280,
+   "h": 320
+  },
+  "nut-cheer": {
+   "w": 284,
+   "h": 320
+  },
+  "nut-wheee": {
+   "w": 280,
+   "h": 320
+  },
+  "nut-bonk": {
+   "w": 280,
+   "h": 320
+  },
+  "nut-stars": {
+   "w": 280,
+   "h": 320
+  },
+  "nut-ouch": {
+   "w": 280,
+   "h": 320
+  },
+  "nut-dizzy": {
+   "w": 278,
+   "h": 320
+  },
+  "nut-sad": {
+   "w": 280,
+   "h": 320
+  },
+  "nut-love": {
+   "w": 294,
+   "h": 320
+  },
+  "squirrel-hold": {
+   "w": 459,
+   "h": 560
+  },
+  "squirrel-cheer": {
+   "w": 507,
+   "h": 560
+  },
+  "squirrel-oops": {
+   "w": 458,
+   "h": 560
+  },
+  "seed": {
+   "w": 70,
+   "h": 96
+  },
+  "board-inside": {
+   "w": 900,
+   "h": 1230
   }
  },
  "frame": {
   "w": 900,
   "h": 1350,
   "hole": [
-   68.6,
-   72.1,
-   762.0,
-   1205.0
+   72.3,
+   88.7,
+   755.3,
+   1173.0
   ],
-  "corner": 56.8,
-  "outer": 113.6
+  "corner": 124.6,
+  "outer": 111.5,
+  "bulbs": false
  },
  "buttons": {
   "btn-gold": {
-   "w": 752,
+   "w": 788,
    "h": 240,
    "capL": 200,
    "capR": 200
   },
   "btn-green": {
-   "w": 767,
+   "w": 778,
    "h": 240,
    "capL": 250,
    "capR": 200
   },
   "btn-red": {
-   "w": 752,
+   "w": 772,
    "h": 240,
    "capL": 250,
    "capR": 200
   },
   "btn-purple": {
-   "w": 658,
+   "w": 671,
    "h": 240,
    "capL": 200,
    "capR": 200
   },
   "btn-start": {
-   "w": 840,
+   "w": 942,
    "h": 300
   },
   "btn-drop": {
-   "w": 765,
+   "w": 945,
    "h": 300
   }
  },
  "podium": {
   "w": 1400,
-  "h": 737,
+  "h": 745,
   "tops": [
-   180,
-   1,
-   268
+   224,
+   57,
+   295
   ]
  }
 };

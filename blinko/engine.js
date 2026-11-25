@@ -67,7 +67,9 @@ export class Drop {
     });
   }
   cooled(k) { const t = this.cool.get(k); if (t !== undefined && this.time - t < 0.08) return false; this.cool.set(k, this.time); return true; }
-  react(b, nx, ny, sp) { if (sp < 170) return; b.impact = Math.max(b.impact || 0, Math.min(1, (sp - 100) / 320)); b.impactAngle = Math.atan2(ny, nx); }
+  react(b, nx, ny, sp) { if (sp < 170) return; b.impact = Math.max(b.impact || 0, Math.min(1, (sp - 100) / 320)); b.impactAngle = Math.atan2(ny, nx); if (sp > 300) this.feel(b, 'bonk', 0.3, 1); }
+  // the nut's face for a moment (pictures only — no score reads it); a stronger feeling is not replaced by a weaker one
+  feel(b, mood, t, pri = 1) { if (b.moodT > 0 && (b.moodPri || 0) > pri) return; b.mood = mood; b.moodT = t; b.moodPri = pri; }
   get dividers() { const n = this.board.pockets.length; return Array.from({ length: n - 1 }, (_, i) => ((i + 1) * BW) / n); }
   s(v) { return lowS(v, this.o.lowScore); }
   burst(x, y, color, n, sp = 160) {
@@ -123,7 +125,7 @@ export class Drop {
     for (const p of this.particles) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 500 * dt; }
     this.particles = this.particles.filter((p) => p.t < p.life);
     this.floats = this.floats.filter((f) => f.t < (f.big ? 1.6 : 1.1));
-    this.effects = this.effects.filter((e) => e.t < (e.kind === 'starfly' ? 1.1 : 0.7));
+    this.effects = this.effects.filter((e) => e.t < (e.kind === 'starfly' ? 1.1 : e.kind === 'nutland' ? 1.5 : 0.7));
     this.coins = this.coins.filter((c) => c.t < 0.9);
     this.shake = Math.max(0, this.shake - dt * 2.5);
   }
@@ -139,7 +141,7 @@ export class Drop {
         if (t >= 1) { b.state = 'fall'; b.vx = (this.rng() - 0.5) * 60; b.vy = 0; b.trail = []; b.bestY = undefined; }
         continue;
       }
-      b.age += dt; b.impact = Math.max(0, (b.impact || 0) - dt * 5.5);
+      b.age += dt; b.impact = Math.max(0, (b.impact || 0) - dt * 5.5); if (b.moodT > 0) b.moodT -= dt;
       if (b.life !== undefined) { b.life -= dt; if (b.life <= 0) { b.removed = true; continue; } }
       this.perTick(b, dt); if (b.removed) continue;
       b.vy += P.gravity * b.grav * dt;
@@ -155,7 +157,7 @@ export class Drop {
           const d = Math.hypot(dx, dy) || 1, nx = dx / d, ny = dy / d;
           b.x = m.x + nx * rr; b.y = m.y + ny * rr;
           const vn = b.vx * nx + b.vy * ny;
-          if (vn < 0) { this.react(b, nx, ny, -vn); b.vx -= 1.9 * vn * nx; b.vy -= 1.9 * vn * ny; m.hitT = 0; this.burst(b.x - nx * b.r, b.y - ny * b.r, '#ffffff', 5); this.sound('bump', 0.2); }
+          if (vn < 0) { this.react(b, nx, ny, -vn); b.vx -= 1.9 * vn * nx; b.vy -= 1.9 * vn * ny; m.hitT = 0; this.burst(b.x - nx * b.r, b.y - ny * b.r, '#ffc83a', 5); this.sound('bump', 0.2); }
         }
       }
       this.collidePegs(b); if (b.removed) continue;
@@ -176,9 +178,9 @@ export class Drop {
           const spring = this.o.springGates && !this.gates.some((q) => q.open || q.hitT >= 0);
           b.vy = spring ? -Math.max(560, Math.abs(b.vy) * 1.1) : -Math.max(140, Math.abs(b.vy) * 0.6);
           b.vx += (this.rng() - 0.5) * 80; g.hitT = 0;
-          this.burst(b.x, 736, '#ffd166', 8); this.sound(spring ? 'boing' : 'gatehit', 0.1);
+          this.burst(b.x, 736, '#e0a050', 8); this.sound(spring ? 'boing' : 'gatehit', 0.1);
           this.lastProgress = this.time; this.openGate(i);
-          if (spring) this.floats.push({ x: b.x, y: 700, text: 'Boing!', tone: 'info', t: 0 });
+          if (spring) { this.floats.push({ x: b.x, y: 700, text: 'Boing!', tone: 'info', t: 0 }); this.feel(b, 'wheee', 0.8, 2); }
         }
       }
       if (b.y > BH - b.r - 2) { if (b.canPocket) this.land(b); else b.removed = true; continue; }
@@ -187,7 +189,7 @@ export class Drop {
       if (stuck) { b.bestT = b.age; b.still = P.stuckSeconds + 1; }
       if (stuck || Math.hypot(b.vx, b.vy) < P.stuckSpeed) {
         b.still += dt;
-        if (b.still > P.stuckSeconds) { b.still = 0; b.nudges++; b.vx = (this.rng() < 0.5 ? -1 : 1) * (140 + b.nudges * 30); b.vy = -120; }
+        if (b.still > P.stuckSeconds) { b.still = 0; b.nudges++; this.feel(b, 'dizzy', 1.1, 2); b.vx = (this.rng() < 0.5 ? -1 : 1) * (140 + b.nudges * 30); b.vy = -120; }
       } else b.still = 0;
       if (Math.round(this.time * 240) % 4 === 0) { b.trail.push({ x: b.x, y: b.y }); if (b.trail.length > (b.kind === 'balloon' ? 28 : 12)) b.trail.shift(); }
     }
@@ -213,7 +215,7 @@ export class Drop {
         b.vx += (-vn + out) * nx; b.vy += (-vn + out) * ny;
         const vt = b.vx * -ny + b.vy * nx;
         if (Math.abs(vt) > 420) { const k = 420 / Math.abs(vt); b.vx = out * nx + vt * k * -ny; b.vy = out * ny + vt * k * nx; }
-        if (this.cooled(`b${i}-${b.id}`)) { s.hitT = 0; this.burst(s.x + nx * s.r, s.y + ny * s.r, s.tone === 'purple' ? '#c7a6ff' : '#ffc58a', 5); this.sound('bump', 0.15); }
+        if (this.cooled(`b${i}-${b.id}`)) { s.hitT = 0; this.burst(s.x + nx * s.r, s.y + ny * s.r, s.tone === 'purple' ? '#e0605a' : '#f0a040', 5); this.sound('bump', 0.15); }
       }
     }
     for (let i = 0; i < this.barricades.length; i++) {
@@ -226,7 +228,7 @@ export class Drop {
       const vn = b.vx * nx + b.vy * ny;
       if (vn < 0) {
         this.react(b, nx, ny, -vn); b.vx -= 1.6 * vn * nx; b.vy -= 1.6 * vn * ny; b.vx += (r.x2 > r.x1 ? 1 : -1) * 40;
-        if (this.cooled(`r${i}-${b.id}`)) { r.hitT = 0; this.burst(cx, cy, '#ffd166', 4, 120); this.sound('peg', 0.3); }
+        if (this.cooled(`r${i}-${b.id}`)) { r.hitT = 0; this.burst(cx, cy, '#a06a34', 4, 120); this.sound('peg', 0.3); }
       }
     }
   }
@@ -248,15 +250,18 @@ export class Drop {
       for (let k = 0; k < stars; k++) this.effects.push({ kind: 'starfly', x: cx + (k - (stars - 1) / 2) * 18, y: 788, t: -k * 0.12 });
       this.sound('star');
     }
-    this.burst(cx, 760, '#ffd166', 16, 280); this.burst(cx, 760, '#ff7ac8', 10, 240);
+    this.burst(cx, 760, '#ffb43a', 16, 280); this.burst(cx, 760, '#7cc255', 10, 240);
     this.add(v, b.x, 760, 'gold', `+${v}`, 'pocket');
     this.effects.push({ kind: 'pocket', x: cx, y: 780, t: 0, p: i });
+    const vals = this.board.pockets.map((q) => q.value).sort((a, c) => c - a), pv = this.board.pockets[i].value;
+    const mood = pv >= vals[Math.min(1, vals.length - 1)] ? 'love' : pv >= vals[Math.floor(vals.length / 2)] ? 'cheer' : 'happy';
+    this.effects.push({ kind: 'nutland', x: cx, y: 770, t: 0, k: b.kind, r: b.r, mood, big: mood === 'love' });
     this.sound('land', v);
     this.shake = Math.min(1, 0.25 + v / 600);
     if (!forced && b.descents + 1 < b.maxDescents) {
       b.descents++; b.state = 'reel'; b.reel = { fromX: b.x, fromY: b.y, toX: b.startX, t: 0 }; b.vx = 0; b.vy = 0;
       for (const p of this.board.pegs) if (p.alive && p.kind !== 'spike') p.scored = false;
-      this.floats.push({ x: b.x, y: b.y - 40, text: 'Reel it in!', tone: 'info', t: 0 });
+      this.floats.push({ x: b.x, y: b.y - 40, text: 'Again!', tone: 'info', t: 0 });
     } else b.removed = true;
   }
   collidePegs(b) {
@@ -283,11 +288,11 @@ export class Drop {
     if (p.kind === 'spike') {
       if (!p.scored) {
         p.scored = true;
-        if (this.o.shield && !this.shieldUsed) { this.shieldUsed = true; this.floats.push({ x: p.x, y: p.y - 14, text: 'Shield!', tone: 'info', t: 0 }); this.sound('shield'); }
-        else { this.add(-p.points, p.x, p.y - 14, 'bad'); this.sound('spike'); this.shake = Math.max(this.shake, 0.35); }
+        if (this.o.shield && !this.shieldUsed) { this.shieldUsed = true; this.floats.push({ x: p.x, y: p.y - 14, text: 'Helmet!', tone: 'info', t: 0 }); this.sound('shield'); this.feel(b, 'cheer', 0.8, 3); }
+        else { this.add(-p.points, p.x, p.y - 14, 'bad'); this.sound('spike'); this.shake = Math.max(this.shake, 0.35); this.feel(b, 'ouch', 0.9, 3); }
       }
     } else {
-      if (!p.scored) { p.scored = true; this.pegsHit++; this.add(p.points, p.x, p.y - 14, p.kind === 'gold' ? 'gold' : 'good'); }
+      if (!p.scored) { p.scored = true; this.pegsHit++; this.add(p.points, p.x, p.y - 14, p.kind === 'gold' ? 'gold' : 'good'); if (p.kind === 'gold') this.feel(b, 'stars', 0.9, 2); }
       this.sound('peg', { row: p.row, kind: p.kind });
     }
     if (p.kind === 'vanish') { p.alive = false; this.effects.push({ kind: 'pop', x: p.x, y: p.y, t: 0, c: 'vanish' }); this.sound('bubble'); }
@@ -306,7 +311,7 @@ export class Drop {
       case 'popcorn': if (b.age > 0.2) this.pop(b); break;
       case 'turtle': {
         const v = this.s(S.turtleAttack), cap = this.s(S.turtleAttackCap);
-        if (this.attackTotal + v <= cap) { this.attackTotal += v; this.floats.push({ x: p.x + 18, y: p.y - 28, text: `−${v} rivals`, tone: 'bad', t: 0 }); }
+        if (this.attackTotal + v <= cap) { this.attackTotal += v; this.floats.push({ x: p.x + 18, y: p.y - 28, text: `Tickle! −${v}`, tone: 'bad', t: 0 }); }
         break;
       }
       case 'cow':
@@ -323,7 +328,7 @@ export class Drop {
         break;
       case 'zombie':
         if (b.hits % 2 === 0 && this.zombies < 4 && this.spawn('minizombie', b.x, b.y, { r: 7, pocketMul: 0.25, vx: (this.rng() - 0.5) * 260, vy: -160 })) {
-          this.zombies++; this.floats.push({ x: b.x, y: b.y - 20, text: 'Braaains!', tone: 'info', t: 0 }); this.sound('zombie');
+          this.zombies++; this.floats.push({ x: b.x, y: b.y - 20, text: 'Baby ladybug!', tone: 'info', t: 0 }); this.sound('zombie');
         }
         break;
       case 'balloon': if ((b.boosts || 0) > 0) { b.boosts--; b.vy = Math.min(b.vy, -170); } break;
@@ -366,4 +371,4 @@ export class Drop {
     return { score: this.turnScore, pegScore: this.pegScore, pocketScore: this.pocketScore, coinScore: this.coinScore, attack: this.attackTotal, shieldUsed: this.shieldUsed, pockets: this.pocketsHit, timedOut: this.timedOut, stars: this.starsEarned, pegsHit: this.pegsHit };
   }
 }
-export const PEG_SPARK = { normal: '#9cc2ff', mint: '#7dffd6', gold: '#ffe27a', vanish: '#ffb3e6', spike: '#ff6b7a' };
+export const PEG_SPARK = { normal: '#5b6cff', mint: '#3fbf5a', gold: '#f0b020', vanish: '#3fb0e0', spike: '#b04fe0' };

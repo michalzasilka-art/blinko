@@ -1,0 +1,65 @@
+/* Blinko — forest version (2026-11-25): Hazel the squirrel, the acorn's moods and the warm wooden look. Loaded after blinko.css and art/ui.css. */
+
+/* the team's acorn in a ring of the team's colour (panels) */
+.ball.nut { position: relative; display: grid; place-items: center; width: 190px; height: 190px; border-radius: 50%; background: radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--c) 35%, transparent) 0 58%, transparent 60%);
+  box-shadow: 0 0 0 10px var(--c), 0 0 50px 8px color-mix(in srgb, var(--c) 55%, transparent); animation: wob 2.4s ease-in-out infinite; }
+.ball.nut img { width: 94%; height: 94%; object-fit: contain; margin-top: -6%; filter: drop-shadow(0 8px 10px rgba(40, 20, 0, .35)); }
+.live .ball.nut.mood { width: 150px; height: 150px; margin: 0 auto 6px; box-shadow: 0 0 0 8px var(--c), 0 0 40px 6px color-mix(in srgb, var(--c) 50%, transparent); animation: nutHop .7s cubic-bezier(.3, 1.6, .5, 1) both, wob 2.4s 0.7s ease-in-out infinite; }
+@keyframes nutHop { from { transform: translateY(40px) scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* the feeling moment over the board after the teacher marks an answer */
+.feel { position: absolute; inset: 0; pointer-events: none; display: grid; place-items: center; z-index: 5; }
+.feel > * { grid-area: 1 / 1; }
+.feel .hz { width: 400px; transform: translate(-150px, 120px); opacity: 0; filter: drop-shadow(0 18px 26px rgba(40, 20, 0, .45)); }
+.feel .nutpop { transform: translate(150px, 80px); opacity: 0; }
+.feel .ball.nut.big { width: 250px; height: 250px; box-shadow: 0 0 0 12px var(--c), 0 0 70px 14px color-mix(in srgb, var(--c) 60%, transparent); animation: none; }
+.feel .say { transform: translateY(-250px); opacity: 0; font-family: "Lilita One", sans-serif; font-size: 108px; line-height: 1; color: #fff7e0; white-space: nowrap;
+  text-shadow: 0 6px 0 #5a2d0c, 0 0 0 #5a2d0c, 5px 5px 0 #5a2d0c, -5px 5px 0 #5a2d0c, 5px -5px 0 #5a2d0c, -5px -5px 0 #5a2d0c, 0 18px 30px rgba(0, 0, 0, .4); }
+.feel.aww .say { font-size: 88px; color: #ffe7c2; }
+.feel.on.yay .hz { animation: hzJump 2s cubic-bezier(.3, 1.4, .5, 1) both; }
+.feel.on.yay .nutpop { animation: nutYay 2s cubic-bezier(.3, 1.6, .5, 1) both; }
+.feel.on.yay .say { animation: sayPop 2s cubic-bezier(.3, 1.8, .5, 1) both; }
+.feel.on.aww .hz { animation: hzSoft 1.8s ease-out both; }
+.feel.on.aww .nutpop { animation: nutAww 1.8s ease-out both; }
+.feel.on.aww .say { animation: saySoft 1.8s ease-out both; }
+@keyframes hzJump { 0% { opacity: 0; transform: translate(-150px, 360px) scale(.6); } 18% { opacity: 1; transform: translate(-150px, 60px) scale(1.04); } 30% { transform: translate(-150px, 120px) scale(1); }
+  45% { transform: translate(-150px, 70px); } 58% { transform: translate(-150px, 120px); } 85% { opacity: 1; transform: translate(-150px, 120px); } 100% { opacity: 0; transform: translate(-150px, 160px) scale(.96); } }
+@keyframes nutYay { 0% { opacity: 0; transform: translate(150px, 300px) scale(.3); } 16% { opacity: 1; transform: translate(150px, -10px) scale(1.15) rotate(-8deg); } 28% { transform: translate(150px, 80px) scale(1) rotate(4deg); }
+  42% { transform: translate(150px, 10px) rotate(-6deg); } 56% { transform: translate(150px, 80px) rotate(0); } 85% { opacity: 1; transform: translate(150px, 80px); } 100% { opacity: 0; transform: translate(150px, 110px) scale(.9); } }
+@keyframes sayPop { 0% { opacity: 0; transform: translateY(-250px) scale(.3) rotate(-8deg); } 14% { opacity: 1; transform: translateY(-250px) scale(1.15) rotate(3deg); } 24% { transform: translateY(-250px) scale(1) rotate(-2deg); }
+  85% { opacity: 1; transform: translateY(-250px); } 100% { opacity: 0; transform: translateY(-290px); } }
+@keyframes hzSoft { 0% { opacity: 0; transform: translate(-150px, 200px); } 20% { opacity: 1; transform: translate(-150px, 120px); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-150px, 140px); } }
+@keyframes nutAww { 0% { opacity: 0; transform: translate(150px, 140px) scale(.8); } 20% { opacity: 1; transform: translate(150px, 90px) rotate(0); } 32% { transform: translate(150px, 90px) rotate(-6deg); } 44% { transform: translate(150px, 90px) rotate(5deg); }
+  56% { transform: translate(150px, 92px) rotate(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(150px, 120px); } }
+@keyframes saySoft { 0% { opacity: 0; transform: translateY(-220px); } 20% { opacity: 1; transform: translateY(-250px); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-260px); } }
+.feel::before { content: ""; position: absolute; inset: 60px 40px; border-radius: 50%; background: radial-gradient(ellipse at 50% 55%, rgba(255, 236, 190, .55), rgba(255, 236, 190, 0) 65%); opacity: 0; }
+.feel.on::before { animation: glow 2s ease-out both; }
+@keyframes glow { 0% { opacity: 0; } 18% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+/* the setup screen: Hazel and her acorn on either side of the logo, mirrored */
+.hero { position: relative; }
+.hz-side { position: absolute; top: 18px; height: 230px; filter: drop-shadow(0 14px 20px rgba(40, 20, 0, .45)); animation: logoBob 4s ease-in-out infinite; }
+.hz-side.left { right: calc(50% + 330px); }
+.hz-side.right { left: calc(50% + 350px); height: 190px; top: 46px; animation-delay: -2s; }
+
+/* the loader: a falling acorn */
+.ld-ball { background: none; box-shadow: none; display: grid; place-items: center; }
+.ld-ball img { width: 170px; height: 170px; object-fit: contain; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .4)); }
+#loader { background: radial-gradient(ellipse at 50% 40%, #a8743a 0%, #3b2410 75%); }
+
+@keyframes fadeHold { 0% { opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .feel.on .hz, .feel.on .nutpop, .feel.on .say { animation: fadeHold 2s linear both !important; }
+  .hz-side, .ball.nut { animation: none; }
+}
+
+/* the bright forest needs darker chips and outlined small titles */
+.chip { background: rgba(58, 34, 12, .62); border-color: rgba(255, 236, 200, .3); }
+.tagline, .hero.small .tagline { text-shadow: 0 3px 0 #4a2508, 2px 2px 0 #4a2508, -2px 2px 0 #4a2508, 2px -2px 0 #4a2508, -2px -2px 0 #4a2508, 0 6px 16px rgba(0, 0, 0, .45); }
+.sh { text-shadow: 0 2px 0 rgba(40, 20, 4, .6); }
+
+/* Hazel cheering next to the winners' podium */
+#podium { position: relative; }
+.hz-pod { position: absolute; left: -70px; bottom: -14px; height: 270px; z-index: 2; filter: drop-shadow(0 16px 22px rgba(40, 20, 0, .45)); animation: hzPod 1.6s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes hzPod { 0%, 100% { transform: translateY(0) } 40% { transform: translateY(-26px) rotate(-3deg) } 55% { transform: translateY(0) scale(1.03, .97) } }
+@media (prefers-reduced-motion: reduce) { .hz-pod { animation: none; } }
