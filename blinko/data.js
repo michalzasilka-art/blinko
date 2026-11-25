@@ -79,7 +79,7 @@ const XMAS_POWERS = {
   popcorn: { name: 'Popcorn Ball', blurb: 'Pops into 5 bouncing pieces of popcorn.', scoring: 'Every piece scores pegs; pieces pay 30% of a basket.' },
   bowling: { name: 'Mighty Walnut', blurb: 'A big, heavy nutcracker walnut that rolls straight through the pegs.' },
   zombie: { name: 'Robins', blurb: 'A mummy robin: up to 4 baby robins join in as it hits pegs.' },
-  shield: { name: 'Woolly Hat', blurb: 'Keeps your nut safe from the next prickly holly.', scoring: 'Lasts until it blocks a holly.' },
+  shield: { name: 'Woolly Hat', blurb: 'Keeps your cookie safe from the next prickly holly.', scoring: 'Lasts until it blocks a holly.' },
   boost: { name: 'Snowy Owl', blurb: 'Answer a bonus question to double the basket.' },
 };
 const XMAS_PEGS = { normal: 'Bauble', mint: 'Mint', gold: 'Gold', vanish: 'Snowflake', spike: 'Holly' };
@@ -89,12 +89,14 @@ if (THEME === 'xmas') {
 }
 // the words that change with the season
 export const WORDS = THEME === 'xmas' ? {
+  ball: 'cookie', aBall: 'a cookie', dropIt: 'Drop the cookie!',
   spikes: 'Holly', bumper: 'Little reindeer', helmet: 'Woolly hat!', helmetBlocked: 'The woolly hat blocked the holly', helmetReady: '🧶 Hat ready', baby: 'Baby robin!', owl: 'Snowy Owl',
   aimHint: 'Tap a number at the top of the board. Gold baubles pay 50, prickly holly takes 40 away!',
   practice: 'Pegs give points, prickly holly takes points away. Each basket has a wooden gate: the first bump opens it.',
-  howto3: 'Pick one of 10 spots at the top. Baubles, mints and gold baubles give points, prickly holly takes points away. Each basket has a wooden gate: the first bump opens it, then an acorn can land inside.',
+  howto3: 'Pick one of 10 spots at the top. Baubles, mints and gold baubles give points, prickly holly takes points away. Each basket has a wooden gate: the first bump opens it, then a cookie can land inside.',
   yay: ['Yay!', 'Hooray!', 'Ho ho ho!', 'Super!', 'Brilliant!', 'Merry well done!'], aww: ['Nice try!', 'Almost!', 'Next time!'],
 } : {
+  ball: 'acorn', aBall: 'an acorn', dropIt: 'Drop the nut!',
   spikes: 'Thistles', bumper: 'Busy bee', helmet: 'Helmet!', helmetBlocked: 'The helmet blocked a thistle', helmetReady: '🌰 Helmet ready', baby: 'Baby ladybug!', owl: 'Wise Owl',
   aimHint: 'Tap a number at the top of the board. Golden acorns pay 50, thistles take 40 away!',
   practice: 'Pegs give points, thistles take points away. Each basket has a wooden gate: the first bump opens it.',

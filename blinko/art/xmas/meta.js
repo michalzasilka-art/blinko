@@ -1,4 +1,4 @@
-// written by Foxino/Blinko/Art/xmas/build_xmas.py
+// written by Foxino/Blinko/Art/xmas/build_xmas.py, then Art/xmas2/build_xmas2.py
 export const META = {
  "sprites": {
   "pu-dynamite": {
@@ -154,7 +154,7 @@ export const META = {
    "h": 200
   },
   "logo": {
-   "w": 1183,
+   "w": 1186,
    "h": 460
   },
   "nut-happy": {
@@ -212,6 +212,90 @@ export const META = {
   "board-inside": {
    "w": 900,
    "h": 1230
+  },
+  "cookie-happy": {
+   "w": 340,
+   "h": 338
+  },
+  "cookie-cheer": {
+   "w": 340,
+   "h": 338
+  },
+  "cookie-wheee": {
+   "w": 340,
+   "h": 338
+  },
+  "cookie-bonk": {
+   "w": 340,
+   "h": 339
+  },
+  "cookie-stars": {
+   "w": 340,
+   "h": 338
+  },
+  "cookie-ouch": {
+   "w": 340,
+   "h": 339
+  },
+  "cookie-dizzy": {
+   "w": 340,
+   "h": 339
+  },
+  "cookie-sad": {
+   "w": 340,
+   "h": 338
+  },
+  "cookie-love": {
+   "w": 340,
+   "h": 338
+  },
+  "reindeer-happy": {
+   "w": 455,
+   "h": 600
+  },
+  "reindeer-sad": {
+   "w": 309,
+   "h": 600
+  },
+  "elf-happy": {
+   "w": 397,
+   "h": 600
+  },
+  "elf-sad": {
+   "w": 306,
+   "h": 600
+  },
+  "snowman-happy": {
+   "w": 496,
+   "h": 600
+  },
+  "snowman-sad": {
+   "w": 369,
+   "h": 600
+  },
+  "trio-hold": {
+   "w": 834,
+   "h": 600
+  },
+  "trio-cheer": {
+   "w": 943,
+   "h": 600
+  },
+  "deco-cane": {
+   "w": 221,
+   "h": 420
+  },
+  "deco-lollipop": {
+   "w": 242,
+   "h": 420
+  },
+  "deco-candies": {
+   "w": 444,
+   "h": 300
+  },
+  "deco-gingerbread": {
+   "w": 327,
+   "h": 420
   }
  },
  "frame": {
@@ -257,7 +341,7 @@ export const META = {
    "h": 300
   },
   "btn-drop": {
-   "w": 932,
+   "w": 937,
    "h": 300
   }
  },
@@ -280,7 +364,22 @@ export const META = {
   "bumper-orb",
   "bumper-purple",
   "coin",
+  "cookie-bonk",
+  "cookie-cheer",
+  "cookie-dizzy",
+  "cookie-happy",
+  "cookie-love",
+  "cookie-ouch",
+  "cookie-sad",
+  "cookie-stars",
+  "cookie-wheee",
   "crown",
+  "deco-candies",
+  "deco-cane",
+  "deco-gingerbread",
+  "deco-lollipop",
+  "elf-happy",
+  "elf-sad",
   "logo",
   "nut-bonk",
   "nut-cheer",
@@ -313,10 +412,27 @@ export const META = {
   "pu-yinyang",
   "pu-yoyo",
   "pu-zombie",
+  "reindeer-happy",
+  "reindeer-sad",
   "seed",
+  "snowman-happy",
+  "snowman-sad",
   "squirrel-cheer",
   "squirrel-hold",
-  "squirrel-oops"
+  "squirrel-oops",
+  "trio-cheer",
+  "trio-hold"
  ],
- "v": 1
+ "v": 2,
+ "cookieBand": {
+  "happy": 0.674,
+  "cheer": 0.674,
+  "wheee": 0.675,
+  "bonk": 0.675,
+  "stars": 0.675,
+  "ouch": 0.675,
+  "dizzy": 0.675,
+  "sad": 0.675,
+  "love": 0.675
+ }
 };

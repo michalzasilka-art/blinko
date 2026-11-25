@@ -3,7 +3,7 @@
 // The pictures are painted (art/*.webp); every one has a code-drawn stand-in. Board units are 600 × 820 (see engine.js).
 import { BW, BH, SLOTS, slotX, THEME } from './data.js';
 import { META as META_FOREST } from './art/meta.js?v=3';
-import { META as META_XMAS } from './art/xmas/meta.js?v=1';
+import { META as META_XMAS } from './art/xmas/meta.js?v=2';
 // the season's pictures: art/xmas/<name>.webp where the Christmas set has one, else the autumn art/<name>.webp
 export const META = THEME === 'xmas' ? META_XMAS : META_FOREST;
 const OWN = new Set(THEME === 'xmas' ? META_XMAS.own || [] : []);
@@ -37,7 +37,7 @@ export const MOODS = ['happy', 'cheer', 'wheee', 'bonk', 'stars', 'ouch', 'dizzy
 const POWER_IDS = ['dynamite', 'yoyo', 'bouncy', 'egg', 'turtle', 'cow', 'balloon', 'puffer', 'oinky', 'shark', 'yinyang', 'popcorn', 'bowling', 'zombie', 'shield', 'boost'];
 const PEG_SPR = { normal: 'peg-blue', mint: 'peg-mint', gold: 'peg-gold', vanish: 'peg-bubble', spike: 'peg-spike' };
 export function artList() {
-  const names = Object.keys(META.sprites).filter((n) => !['logo', 'podium', 'crown', 'btn-round'].includes(n) && !n.startsWith('squirrel-')); if (META.frame) names.push('board-frame');
+  const names = Object.keys(META.sprites).filter((n) => !['logo', 'podium', 'crown', 'btn-round'].includes(n) && !/^(squirrel|reindeer|elf|snowman|trio|deco)-/.test(n)); if (META.frame) names.push('board-frame');
   return names;
 }
 export function loadArt(onOne = () => {}) {
@@ -49,6 +49,48 @@ export const hasArt = (name) => SPR.has(name);
 function sprite(c, name, size) {
   const im = SPR.get(name); if (!im) return false;
   const k = size / Math.max(im.naturalWidth, im.naturalHeight); c.drawImage(im, -im.naturalWidth * k / 2, -im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); return true;
+}
+/* Christmas: the team's ball is a gingerbread cookie (art/xmas/cookie-<mood>.webp). Its white icing border is painted
+   in the team's colour here, once per mood and colour, so every team's cookie matches its team. */
+export const COOKIE = THEME === 'xmas' && !!META.sprites['cookie-happy'];
+const tinted = new Map();
+const hexRGB = (h) => { const n = parseInt(h.replace('#', ''), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+export function cookieCanvas(mood, color) {
+  const im = SPR.get('cookie-' + mood) || SPR.get('cookie-happy'); if (!im) return null;
+  const key = (SPR.has('cookie-' + mood) ? mood : 'happy') + color; if (tinted.has(key)) return tinted.get(key);
+  const w = im.naturalWidth, h = im.naturalHeight, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const c = cv.getContext('2d'); c.drawImage(im, 0, 0);
+  const m0 = SPR.has('cookie-' + mood) ? mood : 'happy', img = c.getImageData(0, 0, w, h), d = img.data, [tr, tg, tb] = hexRGB(color), band = (META.cookieBand && META.cookieBand[m0]) || 0.7;
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4; if (d[i + 3] < 8) continue;
+    if (Math.hypot(x - cx, y - cy) / R < band) continue;                    // the face in the middle stays as painted
+    const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    if (mx < 150 || mx - mn > 55) continue;                                 // only the white (and light-grey shaded) icing
+    const L = (r * 0.3 + g * 0.59 + b * 0.11) / 255, hi = Math.max(0, (L - 0.975) / 0.025) * 0.3, k = 0.22 + 0.78 * L; // keep the shading, a little white shine only on the brightest bits
+    d[i] = Math.min(255, tr * k * (1 - hi) + 255 * hi); d[i + 1] = Math.min(255, tg * k * (1 - hi) + 255 * hi); d[i + 2] = Math.min(255, tb * k * (1 - hi) + 255 * hi);
+  }
+  c.putImageData(img, 0, 0); tinted.set(key, cv); return cv;
+}
+const cookieURLs = new Map();
+export function cookieURL(mood, color) {
+  const k = mood + color; if (cookieURLs.has(k)) return cookieURLs.get(k);
+  const cv = cookieCanvas(mood, color); if (!cv) return null;
+  const u = cv.toDataURL('image/png'); cookieURLs.set(k, u); return u;
+}
+// a candy-cane post between two baskets (red and white stripes, a round top)
+function candyPost(c, x) {
+  c.save(); c.beginPath(); c.rect(x - 4.5, 730, 9, BH - 730); c.clip();
+  c.fillStyle = '#fffaf2'; c.fillRect(x - 5, 724, 10, BH - 724);
+  c.fillStyle = '#e0303d'; for (let y = 714; y < BH; y += 14) { c.beginPath(); c.moveTo(x - 6, y); c.lineTo(x + 6, y - 7); c.lineTo(x + 6, y); c.lineTo(x - 6, y + 7); c.closePath(); c.fill(); }
+  const sh = c.createLinearGradient(x - 5, 0, x + 5, 0); sh.addColorStop(0, 'rgba(0,0,0,.18)'); sh.addColorStop(0.45, 'rgba(255,255,255,.35)'); sh.addColorStop(1, 'rgba(0,0,0,.22)'); c.fillStyle = sh; c.fillRect(x - 5, 730, 10, BH - 730);
+  c.restore();
+  c.fillStyle = '#e0303d'; c.beginPath(); c.arc(x, 730, 6.5, 0, TAU); c.fill(); c.strokeStyle = 'rgba(90,10,20,.55)'; c.lineWidth = 1.2; c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.arc(x - 1.8, 728, 2, 0, TAU); c.fill();
+}
+function cookieSprite(c, mood, color, size) {
+  const cv = cookieCanvas(mood, color || '#e8303a'); if (!cv) return false;
+  const k = size / Math.max(cv.width, cv.height); c.drawImage(cv, -cv.width * k / 2, -cv.height * k / 2, cv.width * k, cv.height * k); return true;
 }
 // the acorn's face for a mood, sized by its width and placed by its round body (a stem or a Santa hat may stick out on top)
 function nutSprite(c, mood, size) {
@@ -383,6 +425,7 @@ export class BoardView {
     // dividers
     for (let i = 1; i < n; i++) {
       const x = i * w; const g = c.createLinearGradient(x - 5, 0, x + 5, 0); g.addColorStop(0, '#8a5226'); g.addColorStop(0.45, '#e2a868'); g.addColorStop(1, '#6b3c18');
+      if (COOKIE) { candyPost(c, x); continue; } // Christmas: candy-cane posts between the baskets
       c.fillStyle = g; c.fillRect(x - 4, 730, 8, BH - 730); c.strokeStyle = 'rgba(70,30,0,.55)'; c.lineWidth = 1.2; c.strokeRect(x - 4, 730, 8, BH - 730);
       c.fillStyle = g; c.beginPath(); c.arc(x, 730, 6.5, 0, TAU); c.fill(); c.stroke();
       c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.arc(x - 1.8, 728, 1.8, 0, TAU); c.fill();
@@ -418,7 +461,12 @@ export class BoardView {
     // squash on impact
     if (b.impact > 0.02) { c.rotate(b.impactAngle); c.scale(1 - b.impact * 0.22, 1 + b.impact * 0.12); c.rotate(-b.impactAngle); }
     const mood = nutMood(b);
-    if (b.kind === 'normal') {
+    if (b.kind === 'normal' && COOKIE) {
+      // Christmas: the team's cookie, its icing in the team's colour, its face for its mood
+      c.save(); c.rotate(Math.sin(b.rot || 0) * 0.3);
+      if (!cookieSprite(c, mood, team && team.color, R * 2.55)) drawAcorn(c, R * 1.14, mood);
+      c.restore();
+    } else if (b.kind === 'normal') {
       // the team's acorn: a ring in the team colour behind it, the painted face for its mood on top
       c.save(); c.lineWidth = R * 0.3; c.strokeStyle = team ? team.color : '#ffb43a'; c.globalAlpha = 0.9; c.beginPath(); c.arc(0, R * 0.1, R * 1.16, 0, TAU); c.stroke(); c.restore();
       c.save(); c.rotate(Math.sin(b.rot || 0) * 0.25);
@@ -437,7 +485,8 @@ export class BoardView {
     const pop = t < 0.18 ? 0.5 + t / 0.18 * 0.7 : t < 0.3 ? 1.2 - (t - 0.18) / 0.12 * 0.2 : 1, fade = t > life * 0.72 ? Math.max(0, 1 - (t - life * 0.72) / (life * 0.28)) : 1;
     c.save(); c.globalAlpha = fade; c.translate(e.x, y); c.scale(pop, pop);
     if (e.mood === 'love' || e.mood === 'cheer') for (let i = 0; i < 3; i++) { const a = t * 2 + i * 2.1, rr = R * 1.5; if (e.mood === 'love') heart(c, Math.cos(a) * rr, Math.sin(a) * rr * 0.6 - R * 0.4, R * 0.28, '#ff5c8a'); else goldStar(c, Math.cos(a) * rr, Math.sin(a) * rr * 0.6 - R * 0.4, R * 0.24); }
-    if (e.k === 'normal') { c.lineWidth = R * 0.26; c.strokeStyle = s.team ? s.team.color : '#ffb43a'; c.globalAlpha = fade * 0.9; c.beginPath(); c.arc(0, R * 0.08, R * 1.02, 0, TAU); c.stroke(); c.globalAlpha = fade; if (!nutSprite(c, e.mood, R * 2.45)) drawAcorn(c, R, e.mood); }
+    if (e.k === 'normal' && COOKIE) { if (!cookieSprite(c, e.mood, s.team && s.team.color, R * 2.3)) drawAcorn(c, R, e.mood); }
+    else if (e.k === 'normal') { c.lineWidth = R * 0.26; c.strokeStyle = s.team ? s.team.color : '#ffb43a'; c.globalAlpha = fade * 0.9; c.beginPath(); c.arc(0, R * 0.08, R * 1.02, 0, TAU); c.stroke(); c.globalAlpha = fade; if (!nutSprite(c, e.mood, R * 2.45)) drawAcorn(c, R, e.mood); }
     else { drawThing(c, e.k, R, this.time, e); emote(c, R, e.mood, this.time); }
     c.restore();
   }

@@ -2,13 +2,19 @@
 // The turn flow is the prototype's ("Foxino Drop"): answer → (stars unlock power-up cards) → pick a release spot → drop → score.
 import { CONFIG, SETS, POWERS, PEGS, CREW, TEAM_COLORS, TEAM_NAMES, TEAM_CREW, crewURL, powerById, THEME, WORDS } from './data.js';
 import { makeBoard, Drop, shuffle } from './engine.js';
-import { BoardView, powerIcon, pegIcon, ballKind, loadArt, artList, artURL, META } from './art.js';
+import { BoardView, powerIcon, pegIcon, ballKind, loadArt, artList, artURL, META, COOKIE, cookieURL } from './art.js';
 import { sfx, unlock, setMuted, isMuted } from './sound.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-document.querySelectorAll('img[data-art]').forEach((im) => { im.src = artURL(im.dataset.art); });
+// Christmas: the reindeer, the elf and the snowman host instead of Hazel; candy on the setup screen
+const XMAS_FRIENDS = THEME === 'xmas' && !!META.sprites['reindeer-happy'];
+const ART_SWAP = XMAS_FRIENDS ? { 'squirrel-hold': 'trio-hold', 'pu-turtle': 'deco-gingerbread', 'nut-wheee': 'cookie-wheee' } : {};
+document.querySelectorAll('img[data-art]').forEach((im) => { im.src = artURL(ART_SWAP[im.dataset.art] || im.dataset.art); });
+if (THEME === 'xmas') { const tl = document.querySelector('#scr-setup .tagline'); if (tl) tl.textContent = 'Answer · Power up · Drop the cookie!'; }
+// candy along the top of the board (Christmas): a candy cane, a heap of sweets and a lollipop sit on the frame, never over the pegs
+if (XMAS_FRIENDS) document.querySelector('.board-wrap').insertAdjacentHTML('beforebegin', ['cane', 'candies', 'lollipop'].map((d) => `<img class="deco deco-${d}" src="${artURL('deco-' + d)}" alt="" onerror="this.remove()">`).join(''));
 const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -110,8 +116,19 @@ const teamImg = (t) => crewURL(t.crew);
 const hazel = (pose) => artURL('squirrel-' + pose);
 const nutPic = (mood) => artURL('nut-' + mood);
 const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
-// the acorn in a ring of the team's colour, for the panels
-const nutBall = (t, mood = 'happy', cls = 'ball nut') => `<span class="${cls}" style="--c:${t.color}"><img src="${nutPic(mood)}" alt=""></span>`;
+// the team's ball for the panels: at Christmas its cookie (icing in the team's colour), else the acorn in a ring of the team's colour
+const nutBall = (t, mood = 'happy', cls = 'ball nut') => {
+  const u = COOKIE && cookieURL(mood, t.color);
+  return u ? `<span class="${cls} cookie" style="--c:${t.color}"><img src="${u}" alt=""></span>` : `<span class="${cls}" style="--c:${t.color}"><img src="${nutPic(mood)}" alt=""></span>`;
+};
+// who shows how an answer felt: Hazel, or at Christmas the reindeer, the elf or the snowman (sad when it was wrong)
+const FRIENDS = ['reindeer', 'elf', 'snowman'];
+let lastFriend = '';
+const friendPic = (right) => {
+  if (!XMAS_FRIENDS) return hazel(right ? 'cheer' : 'oops');
+  const who = pickOne(FRIENDS.filter((f) => f !== lastFriend)); lastFriend = who;
+  return artURL(who + (right ? '-happy' : '-sad'));
+};
 // how a turn's score feels
 const scoreMood = (v) => (v >= 150 ? 'love' : v >= 60 ? 'cheer' : v > 0 ? 'happy' : 'sad');
 
@@ -122,7 +139,7 @@ function feel(right, t) {
   el.style.setProperty('--c', t ? t.color : '#ffb43a');
   el.className = 'feel ' + (right ? 'yay' : 'aww');
   el.innerHTML = `<div class="say">${right ? pickOne(WORDS.yay) : pickOne(WORDS.aww)}</div>
-    <img class="hz" src="${hazel(right ? 'cheer' : 'oops')}" alt=""><span class="nutpop">${nutBall(t || { color: '#ffb43a' }, right ? 'cheer' : 'sad', 'ball nut big')}</span>`;
+    <img class="hz${XMAS_FRIENDS ? ' friend' : ''}" src="${friendPic(right)}" alt=""><span class="nutpop">${nutBall(t || { color: '#ffb43a' }, right ? 'cheer' : 'sad', 'ball nut big')}</span>`;
   void el.offsetWidth; el.classList.add('on');
   if (right && THEME === 'xmas') sfx('jingle');
   if (right && !reduced) leafBurst(960, 560, 70);
@@ -271,7 +288,7 @@ function panelHTML() {
       const n = g.offer.length;
       return turnHead(t, 'Power-up time!') + `<div class="big-msg"><h2>Pick ONE!</h2><p>Your ${'★'.repeat(n)} revealed ${n} card${n > 1 ? 's' : ''}.</p></div>
         <div class="cards">${g.offer.map((id) => { const p = powerById(id); return `<button class="pcard" data-pick="${id}" style="--a:${p.c[0]};--b:${p.c[1]}"><img src="${powerIcon(id, 200)}" alt=""><span><b>${esc(p.name)}</b><p>${esc(p.blurb)}</p><em>${esc(p.scoring)}</em></span></button>`; }).join('')}</div>
-        <div class="actions"><button class="btn ghost lg block" data-act="skipPower">Skip — my acorn</button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
+        <div class="actions"><button class="btn ghost lg block" data-act="skipPower">Skip — my ${WORDS.ball}</button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
     }
     case 'boost':
       if (!g.revealed) return turnHead(t, WORDS.owl) + questionCard(q, 'Bonus question · right = basket × 2') + `<div class="actions">${clueBtn(q)}<button class="btn gold xl block" data-act="reveal">Show answer</button></div>`;
@@ -280,7 +297,7 @@ function panelHTML() {
       const p = g.power ? powerById(g.power) : null;
       const pic = p && !['shield', 'boost'].includes(p.id) ? `<img class="ball" src="${powerIcon(p.id, 260)}" alt="">` : nutBall(t, 'happy');
       const extras = [g.pocketMul > 1 ? '<span class="badge">🦉 Basket × 2</span>' : '', t.shield ? `<span class="badge">${WORDS.helmetReady}</span>` : ''].join(' ');
-      return turnHead(t, 'Drop the nut!') + `<div class="ballbox">${pic}<h3>${p && !['shield', 'boost'].includes(p.id) ? esc(p.name) : 'Your acorn'}</h3><p>${p && !['shield', 'boost'].includes(p.id) ? esc(p.blurb) : WORDS.aimHint}</p><div>${extras}</div></div>
+      return turnHead(t, WORDS.dropIt) + `<div class="ballbox">${pic}<h3>${p && !['shield', 'boost'].includes(p.id) ? esc(p.name) : 'Your ' + WORDS.ball}</h3><p>${p && !['shield', 'boost'].includes(p.id) ? esc(p.blurb) : WORDS.aimHint}</p><div>${extras}</div></div>
         <div class="actions"><div class="hint ${g.slot >= 0 ? 'go' : ''}">${g.slot >= 0 ? `Spot ${g.slot + 1} — ready!` : 'Tap a number at the top of the board'}</div><button class="btn-pic drop ${g.slot >= 0 ? 'pulse' : ''}" data-act="drop" aria-label="Drop" ${g.slot >= 0 ? '' : 'disabled'}><span>DROP!</span></button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
     }
     case 'drop':
@@ -296,7 +313,7 @@ function panelHTML() {
         <div class="actions"><button class="btn gold xl block pulse" data-act="next">${nextLabel()} →</button></div>`;
     }
     case 'practice':
-      return `<div class="big-msg" style="margin-top:20px"><h2>Practice drop</h2><p>Tap a number at the top of the board to drop an acorn. Try it a few times — it does not count!</p></div>
+      return `<div class="big-msg" style="margin-top:20px"><h2>Practice drop</h2><p>Tap a number at the top of the board to drop ${WORDS.aBall}. Try it a few times — it does not count!</p></div>
         <div class="ballbox">${nutBall(g.teams[0], 'wheee')}<p>${WORDS.practice}</p></div>
         <div class="actions"><button class="btn-pic start pulse" data-act="endPractice" aria-label="Start"><span>START</span></button></div>`;
   }
@@ -320,7 +337,7 @@ function renderScores() {
     scoreKey = key;
     $('#scores').innerHTML = g.teams.map((t, i) => `<div class="srow ${i === g.turn && g.phase !== 'practice' && !(g.mode === 'class' && !g.classDrop) ? 'on' : ''}" style="--c:${t.color}">
       ${anyScore ? `<span class="rk ${rankOf(i) === 1 ? 'r1' : ''}">${rankOf(i)}</span>` : ''}
-      <span class="pic" style="background-image:url(${teamImg(t)})"></span>
+      <span class="pic" style="background-image:url(${teamImg(t)})">${COOKIE && cookieURL('happy', t.color) ? `<img class="tcookie" src="${cookieURL('happy', t.color)}" alt="">` : ''}</span>
       <span class="nm"><b>${esc(t.name)}</b><span class="st">${[0, 1, 2].map((k) => `<i class="${k < t.stars ? 'on' : ''}"></i>`).join('')}${t.shield ? `<img class="sh-ic" src="${powerIcon('shield', 52)}" alt="shield">` : ''}</span></span>
       <span class="sc" data-sc="${i}">${Math.round(shownScores[i] || 0)}</span></div>`).join('');
   }
@@ -462,7 +479,7 @@ function openHowto(starting) {
   $('#howto').innerHTML = `<div class="glass howto"><h2 class="title">How to play</h2><div class="steps">
     <div class="step"><span class="n">1</span><h3>Answer the question</h3><div class="pics">${META.sprites['q-mark'] ? `<img src="${artURL('q-mark')}" alt="">` : '<span style="font-size:80px">?</span>'}</div><p>The team answers. The teacher shows the answer and taps <b>Right</b> or <b>Wrong</b>. ${settings.mode === 'class' ? 'In “Everyone answers” mode every team writes an answer, then every team drops.' : ''}</p></div>
     <div class="step"><span class="n">2</span><h3>Collect stars, pick a power-up</h3><div class="pics">${ic(['dynamite', 'balloon', 'popcorn'])}</div><p>Land in baskets with ★ to collect stars. On your next right answer each star turns over one power-up card (up to 3) — pick ONE or skip it.</p></div>
-    <div class="step"><span class="n">3</span><h3>Drop the acorn</h3><div class="pics"><img src="${pegIcon('gold', 120)}" alt=""><img src="${pegIcon('mint', 120)}" alt=""><img src="${pegIcon('spike', 120)}" alt=""></div><p>${WORDS.howto3}</p></div>
+    <div class="step"><span class="n">3</span><h3>Drop the ${WORDS.ball}</h3><div class="pics"><img src="${pegIcon('gold', 120)}" alt=""><img src="${pegIcon('mint', 120)}" alt=""><img src="${pegIcon('spike', 120)}" alt=""></div><p>${WORDS.howto3}</p></div>
   </div><div class="row">${starting ? '<button class="btn ghost lg" data-act="skipHowto">Skip — start now</button><button class="btn gold xl pulse" data-act="practice">Practice drop ▶</button>' : '<button class="btn gold xl" data-act="closeHowto">Got it!</button>'}</div></div>`;
   $('#howto').classList.add('on');
 }
@@ -480,7 +497,7 @@ function showFinal() {
     const P = META.podium, order = [sorted[1], sorted[0], sorted[2]], xs = [1 / 6, 1 / 2, 5 / 6];
     $('#podium').innerHTML = `<div class="podium-pic" style="aspect-ratio:${P.w}/${P.h}"><img class="pod-img" src="${artURL('podium')}" alt="">` + order.map((t, k) => t ? `<div class="pp p${[2, 1, 3][k]}" style="left:${xs[k] * 100}%;bottom:${(1 - P.tops[k] / P.h) * 100}%;--c:${t.color}"><b>${esc(t.name)}</b><span class="ps">${t.score}</span><span class="pic" style="background-image:url(${teamImg(t)})">${k === 1 && !tie && META.sprites.crown ? `<img class="crown" src="${artURL('crown')}" alt="">` : ''}</span></div>` : '').join('') + '</div>';
   } else $('#podium').innerHTML = pod;
-  $('#podium').insertAdjacentHTML('beforeend', `<img class="hz-pod" src="${hazel('cheer')}" alt="">`);
+  $('#podium').insertAdjacentHTML('beforeend', (XMAS_FRIENDS && g.teams.length > 5 ? '' : `<img class="hz-pod${XMAS_FRIENDS ? ' trio' : ''}" src="${XMAS_FRIENDS ? artURL('trio-cheer') : hazel('cheer')}" alt="">`));
   $('#finScores').innerHTML = sorted.map((t, i) => `<div class="frow" style="--c:${t.color}"><span class="pic" style="background-image:url(${teamImg(t)})"></span><b>${i + 1}. ${esc(t.name)}<span class="xp">${t.correct}/${t.answered} right · ${t.xp} XP</span></b><span class="sc">${t.score}</span></div>`).join('');
   const total = g.answers.length, right = g.answers.filter((a) => a.correct).length;
   const wrong = [], seen = new Set(); g.answers.filter((a) => !a.correct).forEach((a) => { if (!seen.has(a.qid)) { seen.add(a.qid); wrong.push(a); } });
@@ -573,7 +590,7 @@ function runDemo(d) {
 /* ------------------------------------------------------------ loading: every picture first, then the game appears */
 (function boot() {
   const BG = THEME === 'xmas' && (META.own || []).includes('bg-xmas') ? 'bg-xmas' : 'bg-forest';
-  const pics = [BG, 'logo', 'squirrel-hold', 'squirrel-cheer', 'squirrel-oops', ...Object.keys(META.buttons), 'btn-round', 'podium', 'crown'].filter((n) => n === BG || n === 'logo' || META.sprites[n] || META.buttons[n] || (n === 'podium' && META.podium)).map(artURL)
+  const pics = [BG, 'logo', ...(XMAS_FRIENDS ? ['trio-hold', 'trio-cheer', 'deco-gingerbread', 'deco-cane', 'deco-lollipop', 'deco-candies', ...FRIENDS.flatMap((f) => [f + '-happy', f + '-sad'])] : ['squirrel-hold', 'squirrel-cheer', 'squirrel-oops']), ...Object.keys(META.buttons), 'btn-round', 'podium', 'crown'].filter((n) => n === BG || n === 'logo' || META.sprites[n] || META.buttons[n] || (n === 'podium' && META.podium)).map(artURL)
     .concat(CREW.map((c) => crewURL(c.id)));
   const total = pics.length + artList().length + 1; let done = 0;
   const bar = $('#loadBar'), tick = () => { done++; if (bar) bar.style.width = Math.round(done / total * 100) + '%'; };
