@@ -398,3 +398,10 @@ body.painted-logo .mini-img { height: 78px; margin: -4px 0; }
 /* the question picture always fits the space left on the card */
 .qcard .img { position: relative; min-height: 120px; }
 .qcard .img .qp { position: absolute; inset: 6px 0; width: 100%; height: calc(100% - 12px); max-height: none; object-fit: contain; }
+
+/* aiming: no DROP! button any more, tapping a number on the board drops the ball (2026-11-25) */
+.tapdrop { display: flex; align-items: center; gap: 18px; padding: 18px 22px; border-radius: 26px; background: rgba(255, 255, 255, .1); border: 3px dashed rgba(255, 225, 140, .55); font-weight: 800; font-size: 27px; line-height: 1.25; color: #fff3d8; }
+.tapdrop b { font-family: "Lilita One", sans-serif; font-weight: 400; font-size: 32px; color: #ffe14d; }
+.tapdrop .tap-arrow { flex: none; display: grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; background: linear-gradient(180deg, #ffe38a, #ffb21e); color: #5a2a00; font-size: 40px; box-shadow: 0 6px 0 #b3561e; animation: tapNudge 1.1s ease-in-out infinite; }
+@keyframes tapNudge { 50% { transform: translateX(10px); } }
+@media (prefers-reduced-motion: reduce) { .tapdrop .tap-arrow { animation: none; } }

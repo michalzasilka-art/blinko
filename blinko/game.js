@@ -173,7 +173,7 @@ function record(i, correct, bonus = false) {
   g.answers.push({ qid: q.id, prompt: q.prompt, answer: q.answer, teamId: t.id, correct, round: g.round, bonus });
 }
 function toAim() {
-  g.phase = 'aim'; g.slot = -1; drop = null;
+  g.phase = 'aim'; g.slot = -1; drop = null; g.aimAt = performance.now();
   if (!g.board || !g.boardFresh) g.board = makeBoard(g.round, { spikes: settings.spikes, lowScore: settings.lowScore });
   g.boardFresh = false;
 }
@@ -251,7 +251,7 @@ function render() {
   $('#modeChip').textContent = g.mode === 'class' ? (g.classDrop ? `Every team drops · ${g.turn + 1} of ${g.teams.length}` : 'Everyone answers') : 'Team turns';
   $('#scr-game').className = 'screen on n' + g.teams.length;
   renderScores();
-  const key = [g.phase, g.turn, g.round, g.qPtr, g.revealed, g.clueStep, g.power, g.slot, JSON.stringify(g.marks || {}), g.offer.join()].join('|');
+  const key = [g.phase, g.turn, g.round, g.qPtr, g.revealed, g.clueStep, g.power, JSON.stringify(g.marks || {}), g.offer.join()].join('|');
   if (key !== panelKey) { panelKey = key; $('#panel').innerHTML = panelHTML(); }
 }
 // a question's picture: the painted one when we have it, else its symbol
@@ -298,7 +298,7 @@ function panelHTML() {
       const pic = p && !['shield', 'boost'].includes(p.id) ? `<img class="ball" src="${powerIcon(p.id, 260)}" alt="">` : nutBall(t, 'happy');
       const extras = [g.pocketMul > 1 ? '<span class="badge">🦉 Basket × 2</span>' : '', t.shield ? `<span class="badge">${WORDS.helmetReady}</span>` : ''].join(' ');
       return turnHead(t, WORDS.dropIt) + `<div class="ballbox">${pic}<h3>${p && !['shield', 'boost'].includes(p.id) ? esc(p.name) : 'Your ' + WORDS.ball}</h3><p>${p && !['shield', 'boost'].includes(p.id) ? esc(p.blurb) : WORDS.aimHint}</p><div>${extras}</div></div>
-        <div class="actions"><div class="hint ${g.slot >= 0 ? 'go' : ''}">${g.slot >= 0 ? `Spot ${g.slot + 1} — ready!` : 'Tap a number at the top of the board'}</div><button class="btn-pic drop ${g.slot >= 0 ? 'pulse' : ''}" data-act="drop" aria-label="Drop" ${g.slot >= 0 ? '' : 'disabled'}><span>DROP!</span></button>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
+        <div class="actions"><div class="tapdrop"><span class="tap-arrow" aria-hidden="true">➜</span><span><b>Tap a number</b> at the top of the board: the ${WORDS.ball} drops from there straight away!</span></div>${g.undo ? '<button class="link undo" data-act="undo">Undo the marking</button>' : ''}</div>`;
     }
     case 'drop':
       return turnHead(t, 'Dropping…') + (g.power && !['shield', 'boost'].includes(g.power) ? `<div class="inplay"><img src="${powerIcon(g.power, 200)}" alt=""><b>${esc(powerById(g.power).name)}</b></div>` : '') + `<div class="live"><small>Turn score</small><div class="num" id="liveNum">0</div><div class="breakdown" id="liveBd"></div></div>`;
@@ -409,13 +409,23 @@ $('#board').addEventListener('pointerdown', (e) => {
   const r = e.currentTarget.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 748, y = (e.clientY - r.top) / r.height * 990;
   const slot = view.slotAt(x, y); if (slot < 0) return;
   if (g.phase === 'aim') {
-    if (g.slot === slot) { release(); return; }
-    g.slot = slot; sfx('select'); render();
+    // picking the spot IS the drop (the user's note "Drop", 2026-11-25): the ball falls from the tapped spot at once.
+    // release() only works in the 'aim' phase, so a second tap (or a double tap) cannot drop a second ball.
+    if (performance.now() - (g.aimAt || 0) < 250) return; // ignore a tap that started before the board was ready
+    g.slot = slot; sfx('select'); release();
   } else if (g.phase === 'practice' && !practice) {
     g.slot = slot; practice = new Drop(g.practiceBoard = makeBoard(1, { spikes: false }), { springGates: settings.springGates, movingBumper: settings.movingBumper, sound: sfx });
     practice.release(slot);
   }
 });
+
+// with a mouse (or a whiteboard pen that hovers) the ball follows the pointer above the board, so you see where it will fall
+$('#board').addEventListener('pointermove', (e) => {
+  if (!g || paused || g.phase !== 'aim' || e.pointerType === 'touch') return;
+  const r = e.currentTarget.getBoundingClientRect(), slot = view.slotAt((e.clientX - r.left) / r.width * 748, (e.clientY - r.top) / r.height * 990);
+  g.slot = slot;
+});
+$('#board').addEventListener('pointerleave', () => { if (g && g.phase === 'aim') g.slot = -1; });
 
 /* ------------------------------------------------------------ buttons */
 stage.addEventListener('click', (e) => {
@@ -549,8 +559,7 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || !g || screen !== 'game' || paused) return;
   const k = e.key;
-  if (/^[0-9]$/.test(k) && (g.phase === 'aim')) { g.slot = k === '0' ? 9 : +k - 1; sfx('select'); render(); }
-  else if ((k === 'Enter' || k === ' ') && g.phase === 'aim') { e.preventDefault(); release(); }
+  if (/^[0-9]$/.test(k) && (g.phase === 'aim')) { g.slot = k === '0' ? 9 : +k - 1; sfx('select'); release(); } // a number key drops from that spot
   else if ((k === ' ' || k === 'Enter') && (g.phase === 'question' || g.phase === 'boost') && !g.revealed) { e.preventDefault(); act('reveal'); }
   else if ((k === 'Enter' || k === ' ') && (g.phase === 'result' || g.phase === 'explain')) { e.preventDefault(); next(); }
 });
